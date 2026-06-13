@@ -4,10 +4,11 @@ _Read this first when resuming. Trust it over assumptions; if it conflicts with 
 investigate before proceeding._
 
 ## Current status
-Step 2 (visual system + ConfidencePipelineStrip valve) complete and **visually verified**
-(gate-open vs gate-closed obviously distinct; Mechanism Gate renders as a sluice valve).
-**Next: Step 3 — wire fixtures** (Person A's real JSON is already in `/fixtures/` — wrap in
-typed replay helpers; `cacna1c-run.json` = gate-closed).
+Step 3 (fixtures) complete — my typed `kcnq1Run` (gate open) + `gateClosedRun` (gate closed)
+compile as `RealtimeEvent[]` (no casts). **Person A has ALSO pushed REAL captured fixtures** to
+`/fixtures/*-run.json` (kcnq1 / cacna1c / ldlr; `cacna1c` = gate-closed) + outputs `*-output.json`.
+**Next: Step 4 — the `useEvidenceRun` hook**, which should replay Person A's real JSON (adapt to
+`RealtimeEvent`). See `docs/CROSS-TEAM-ALIGNMENT.md`.
 
 Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typecheck` + `pnpm lint` clean.
 
@@ -19,11 +20,16 @@ Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typechec
 - [x] **Step 2** — clinical palette + confidence tokens (`app/globals.css`), Newsreader serif,
       `components/ConfidencePipelineStrip.tsx` (Mechanism Gate = sluice valve), layout with
       TooltipProvider + Toaster, dev preview at `/dev/pipeline`, `components/CLAUDE.md` conventions.
+- [x] **Step 3** — fixtures `fixtures/kcnq1-run.ts` (`kcnq1Run`, gate ≈ 0.95) + `fixtures/gate-closed-run.ts`
+      (`gateClosedRun`, SCN8A gain-of-function, gate ≈ 0.10, strong cross-species suppressed).
+      Ordered `RealtimeEvent[]`, no casts. pipeline_update events carry CUMULATIVE state.
 
 ## Next (immediate)
-Step 3 — author two ordered `RealtimeEvent[]` fixtures typed against `/lib/types.ts` (NO casts):
-`kcnq1-run.ts` (everything agrees, gate ≈ 0.95) and `gate-closed-run.ts` (strong cross-species
-suppressed by gate ≈ 0.1, overall low/moderate). Mark clearly as dev scaffolds.
+Step 4 — `lib/useEvidenceRun.ts`: stable return `{ fragments, pipeline, narrations, complete,
+briefUrl }`. Fixture mode replays a `RealtimeEvent[]` on a ~700ms timer; merge each pipeline_update
+field-by-field (non-null wins); accumulate fragments + narrations; set complete/briefUrl on the
+`complete` event. Live mode = stub `subscribeToRun(runId, onEvent)` that throws "not yet wired"
+(Step 9). Throwaway test page logs the accumulating state advancing over time.
 
 ## Known issues / TODOs
 - **Tailwind v4 + Turbopack stale cache:** after adding new `@theme` tokens + their utilities,
@@ -52,4 +58,5 @@ suppressed by gate ≈ 0.1, overall low/moderate). Mark clearly as dev scaffolds
       `panel-to-hpo.json` labels). Send the `value` key as `clinicalContext`.
 
 ## Last commit
-Run `git log --oneline -8` on branch `yesh`.
+Rebased onto Person A's `2e36237` (cross-team alignment + real fixtures). Step 3 (`e0b74b7`,
+typed fixtures) replayed on top. Branch `yesh`. Run `git log --oneline -10`.
