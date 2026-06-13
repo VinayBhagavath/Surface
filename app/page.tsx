@@ -11,8 +11,9 @@ import { toast } from "sonner";
 
 import { startRun } from "@/app/actions/start-run";
 import { parseVariantsFromText, resolveVariant } from "@/lib/variant-intake";
-import { DEMOS } from "@/fixtures/runs";
 import { cn } from "@/lib/utils";
+
+const SAMPLE_VCF = "/samples/sample-ldlr.vcf";
 
 export default function IntakePage() {
   const router = useRouter();
@@ -64,6 +65,20 @@ export default function IntakePage() {
     setDragging(false);
     const file = e.dataTransfer.files?.[0];
     if (file) handleFile(file);
+  }
+
+  async function useSampleFile() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const res = await fetch(SAMPLE_VCF);
+      const text = await res.text();
+      const file = new File([text], "sample.vcf", { type: "text/plain" });
+      await handleFile(file);
+    } catch {
+      setBusy(false);
+      toast.error("Couldn't load the sample file.");
+    }
   }
 
   return (
@@ -128,25 +143,17 @@ export default function IntakePage() {
           />
         </button>
 
-        {/* sample fallback for anyone without a file on hand */}
-        <div className="space-y-2.5 text-center">
-          <p className="text-xs text-muted-foreground">
-            Don&rsquo;t have a file? Try a sample case:
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-2">
-            {DEMOS.map((d) => (
-              <button
-                key={d.id}
-                type="button"
-                disabled={busy}
-                onClick={() => go({ demo: d.id, variant: d.variant, clinicalContext: d.clinicalContext })}
-                className="inline-flex items-center gap-1.5 rounded-full border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-60"
-              >
-                <FileText className="size-3.5 text-muted-foreground" />
-                {d.gene}
-              </button>
-            ))}
-          </div>
+        {/* one unobtrusive way to try it without a file on hand */}
+        <div className="text-center">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={useSampleFile}
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground underline-offset-2 transition-colors hover:text-foreground hover:underline disabled:opacity-60"
+          >
+            <FileText className="size-3.5" />
+            Don&rsquo;t have your file handy? Use a sample file
+          </button>
         </div>
       </div>
     </main>

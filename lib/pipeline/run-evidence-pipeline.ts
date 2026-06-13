@@ -19,11 +19,13 @@ import {
   ensemblDiopt,
   impc,
   monarch,
+  searchLiterature,
 } from "@/lib/connectors";
 import {
   getGeneMechanism,
   zygosityForInheritance,
   hpoTermsForContext,
+  contextLabel as contextPhrase,
 } from "@/lib/reference";
 import { PS3_MODEL_ORGANISM_CAVEAT } from "@/lib/reference/acmg";
 import { predictorLeadership, mechanismGate, crossSpeciesCheck, synthesis } from "@/lib/grok";
@@ -269,6 +271,44 @@ export async function runEvidencePipeline(
     strength: cross.crossSpeciesStrength,
     found: impcFrags.some((f) => f.found),
   };
+
+  // ── Step 5b — scholarly literature pass (Europe PMC) ───────────────────────
+  // Real published papers for this gene + condition, so the synthesis is
+  // grounded in literature, not just database records. Best-effort: a failure
+  // here never blocks synthesis.
+  const lit = await runStep("step5-literature", async () => {
+    try {
+      return await searchLiterature({
+        geneSymbol: gene,
+        condition: contextPhrase(input.clinicalContext),
+        limit: 4,
+      });
+    } catch {
+      return { found: false, count: 0, query: "", papers: [] };
+    }
+  });
+  if (lit.found) {
+    const litFrag: EvidenceFragment = {
+      id: "step5-literature",
+      source: "monarch_phenodigm", // reuse an existing source slot (contract-stable)
+      step: 5,
+      queryTime: new Date().toISOString(),
+      found: true,
+      relevance: "unscored",
+      summary: `Literature: ${lit.count.toLocaleString()} papers on ${gene} + ${contextPhrase(
+        input.clinicalContext,
+      )}; most relevant: "${lit.papers[0]?.title ?? ""}"`,
+      raw: { query: lit.query, count: lit.count, papers: lit.papers },
+    };
+    await emitFragment("f-literature", litFrag);
+    await emitNarration(
+      "n-literature",
+      `I also pulled the published research — ${lit.count.toLocaleString()} papers on ${gene} and this condition — to ground the conclusion.`,
+    );
+    for (const p of lit.papers) {
+      trajectory.push(`Literature: "${p.title}" (${p.journal ?? "?"}, ${p.year ?? "?"})`);
+    }
+  }
 
   // ── Step 6 — layered confidence + synthesis ────────────────────────────────
   const pipeline = computeLayeredConfidence(ci);

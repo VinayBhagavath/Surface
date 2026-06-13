@@ -8,6 +8,11 @@ export { ensemblDiopt, type OrthologResult } from "@/lib/connectors/ensembl-diop
 export { impc, type ImpcResult } from "@/lib/connectors/impc";
 export { monarch, type MonarchResult } from "@/lib/connectors/monarch";
 export {
+  searchLiterature,
+  type LiteratureResult,
+  type LiteraturePaper,
+} from "@/lib/connectors/literature";
+export {
   type ResolvedVariant,
   type ConsequenceClass,
   looksLikeRsId,

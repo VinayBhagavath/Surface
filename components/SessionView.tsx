@@ -10,10 +10,10 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Check, Eye, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, BookOpen, Check, Eye, Loader2 } from "lucide-react";
 
 import { useEvidenceRun } from "@/lib/useEvidenceRun";
-import { DEMO_BY_ID, DEMO_OUTPUTS, DEMO_RUNS, type DemoId } from "@/fixtures/runs";
+import { DEMO_OUTPUTS, DEMO_RUNS, type DemoId } from "@/fixtures/runs";
 import { sequenceContextFromCard } from "@/lib/sequence";
 import { buildPatientSummary, type PatientSummary } from "@/lib/patient-summary";
 import { summarizeForPatient } from "@/app/actions/patient-summary";
@@ -74,12 +74,8 @@ export function SessionView({
   variant?: string;
   clinicalContext?: string;
 }) {
-  const meta = DEMO_BY_ID[demo];
   const output = DEMO_OUTPUTS[demo];
   const seqCtx = React.useMemo(() => sequenceContextFromCard(output.evidenceCard), [output]);
-
-  const displayGene = output.evidenceCard.geneSymbol || meta.gene;
-  const displayVariant = variant?.trim() || meta.variant;
 
   const { fragments, pipeline, complete } = useEvidenceRun(runId, {
     source: live ? "live" : "fixture",
@@ -120,18 +116,15 @@ export function SessionView({
         >
           <ArrowLeft className="size-4" />
         </Link>
-        <div className="leading-tight">
-          <span className="font-serif text-base font-semibold text-foreground">{displayGene}</span>{" "}
-          <span className="font-mono text-xs text-muted-foreground">{displayVariant}</span>
-        </div>
-        <span className="ml-auto flex items-center gap-1.5 font-mono text-[0.65rem] uppercase tracking-wider text-muted-foreground">
+        <span className="font-serif text-base font-semibold text-foreground">Your result</span>
+        <span className="ml-auto flex items-center gap-1.5 text-xs text-muted-foreground">
           {complete ? (
             <>
-              <Check className="size-3.5 text-confidence-high-ink" /> done
+              <Check className="size-3.5 text-confidence-high-ink" /> Done
             </>
           ) : (
             <>
-              <Loader2 className="size-3.5 animate-spin" /> working
+              <Loader2 className="size-3.5 animate-spin" /> Working…
             </>
           )}
         </span>
@@ -240,6 +233,40 @@ export function SessionView({
                   ? "Summary written by Grok, grounded in this run's evidence"
                   : "Summary generated from this run's evidence"}
               </p>
+            </div>
+          )}
+
+          {/* real research papers this is grounded in (Europe PMC) */}
+          {complete && summary && summary.references.length > 0 && (
+            <div className="rounded-xl border bg-card/60 p-4">
+              <div className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
+                <BookOpen className="size-4 text-muted-foreground" />
+                Research this is based on
+              </div>
+              <ul className="space-y-2">
+                {summary.references.map((r, i) => (
+                  <li key={i} className="text-sm leading-snug">
+                    {r.url ? (
+                      <a
+                        href={r.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-foreground/90 underline-offset-2 hover:text-primary hover:underline"
+                      >
+                        {r.title}
+                      </a>
+                    ) : (
+                      <span className="text-foreground/90">{r.title}</span>
+                    )}
+                    {(r.journal || r.year) && (
+                      <span className="text-muted-foreground">
+                        {" "}
+                        — {[r.journal, r.year].filter(Boolean).join(", ")}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </section>

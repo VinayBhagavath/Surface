@@ -23,6 +23,7 @@ export const TRACE_STAGES: TraceStage[] = [
   { id: "effect", label: "Studied the change's likely effect", activeLabel: "Studying the change's likely effect" },
   { id: "gate", label: "Decided whether animal studies apply", activeLabel: "Deciding whether animal studies apply" },
   { id: "mouse", label: "Read mouse disease research", activeLabel: "Reading mouse disease research" },
+  { id: "papers", label: "Read published research papers", activeLabel: "Reading published research papers" },
   { id: "summary", label: "Wrote your summary", activeLabel: "Writing your summary" },
 ];
 
@@ -43,6 +44,7 @@ export function stageStatuses(input: {
     reached >= 2, // variant effect (step 2)
     gateSeen, // mechanism gate (step 3)
     reached >= 4, // cross-species / mouse (step 4)
+    reached >= 5 || complete, // literature pass (alongside step 5/6 synthesis)
     complete, // summary
   ];
 

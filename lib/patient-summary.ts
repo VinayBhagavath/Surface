@@ -9,6 +9,13 @@
 import type { ConfidenceLabel, RunOutput } from "@/lib/types";
 import { CLINICAL_CONTEXT_OPTIONS } from "@/lib/clinical-context-options";
 
+export type SummaryReference = {
+  title: string;
+  journal: string | null;
+  year: string | null;
+  url: string | null;
+};
+
 export type PatientSummary = {
   confidence: ConfidenceLabel;
   /** 2-4 word verdict chip, e.g. "Likely important". */
@@ -23,9 +30,16 @@ export type PatientSummary = {
   therapyNote: string;
   /** What to do next — always frames the doctor as the decision-maker. */
   nextStep: string;
+  /** Real published papers the result is grounded in (Europe PMC). */
+  references: SummaryReference[];
   /** Whether the prose was written by Grok or the deterministic fallback. */
   source: "grok" | "fallback";
 };
+
+/** Plain, exported so the server action can build the literature query. */
+export function plainContextLabel(key: string): string {
+  return contextLabel(key);
+}
 
 function contextLabel(key: string): string {
   const found = CLINICAL_CONTEXT_OPTIONS.find((o) => o.value === key);
@@ -118,6 +132,7 @@ export function buildPatientSummary(output: RunOutput): PatientSummary {
     mouseLine,
     therapyNote,
     nextStep,
+    references: [],
     source: "fallback",
   };
 }

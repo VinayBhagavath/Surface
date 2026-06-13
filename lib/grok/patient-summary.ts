@@ -6,6 +6,7 @@
 
 import { z } from "zod";
 import { callGrokJSON } from "@/lib/grok/client";
+import type { LiteraturePaper } from "@/lib/connectors/literature";
 import type { RunOutput } from "@/lib/types";
 
 export const PatientSummaryGrokSchema = z.object({
@@ -18,12 +19,17 @@ export const PatientSummaryGrokSchema = z.object({
 });
 export type PatientSummaryGrok = z.infer<typeof PatientSummaryGrokSchema>;
 
-export async function patientSummary(output: RunOutput): Promise<PatientSummaryGrok> {
+export async function patientSummary(
+  output: RunOutput,
+  literature: LiteraturePaper[] = [],
+): Promise<PatientSummaryGrok> {
   const { evidenceCard: card, doctorBrief: brief } = output;
   const gate = card.pipeline.mechanismGate;
   const cross = card.pipeline.crossSpecies;
 
   const system = `You explain a genetic "variant of uncertain significance" (VUS) result to a patient who has NO biology background and is preparing for a CRISPR or gene-therapy operation. Use warm, plain, everyday language. NO jargon (no "missense", "allele", "ortholog", "LOEUF"). Never invent findings or numbers — use only what is given.
+
+You are also given a short list of REAL published research papers (titles + journals) found for this gene and condition. You may use them to ground your wording (e.g. "this gene is well studied for this condition"), but do NOT fabricate their contents or cite specific claims you cannot see — only their existence/topic is known to you.
 
 Write:
 - verdict: 2-4 words capturing the result ("Likely important", "Possibly important", "Still unclear").
@@ -56,6 +62,11 @@ Output JSON with EXACTLY these keys:
       mechanismGate: gate ? { multiplier: gate.value, reason: gate.reason } : null,
       crossSpeciesEvidence: cross ? { strength: cross.label, reason: cross.reason } : null,
       whatWouldChangeThis: brief.whatWouldChangeThis,
+      researchPapersFound: literature.map((p) => ({
+        title: p.title,
+        journal: p.journal,
+        year: p.year,
+      })),
     },
     null,
     2,

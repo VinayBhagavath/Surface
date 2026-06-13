@@ -66,3 +66,15 @@ export function hpoTermsForContext(context: string): string[] {
 export function availablePanels(): string[] {
   return Object.keys(panelToHpo).filter((k) => k !== "_meta");
 }
+
+const panelLabels =
+  ((panelToHpoRaw as { _meta?: { labels?: Record<string, string> } })._meta?.labels) ?? {};
+
+/** Human-readable, plain condition phrase for a clinical-context key — used for
+ *  literature queries and patient-facing text. Strips the parenthetical/slash
+ *  detail (e.g. "Arrhythmia / long-QT" -> "Arrhythmia"). */
+export function contextLabel(context: string): string {
+  const key = normalizeContext(context);
+  const raw = panelLabels[key] ?? context.replace(/_/g, " ");
+  return raw.split(/[/(]/)[0].trim();
+}
