@@ -28,7 +28,14 @@ import {
   contextLabel as contextPhrase,
 } from "@/lib/reference";
 import { PS3_MODEL_ORGANISM_CAVEAT } from "@/lib/reference/acmg";
-import { predictorLeadership, mechanismGate, crossSpeciesCheck, synthesis } from "@/lib/grok";
+import {
+  predictorLeadership,
+  mechanismGate,
+  crossSpeciesCheck,
+  synthesis,
+  researchGeneMechanism,
+} from "@/lib/grok";
+import { webSearchEnabled } from "@/lib/env";
 import {
   predictorLeadershipFallback,
   mechanismGateFallback,
@@ -187,7 +194,39 @@ export async function runEvidencePipeline(
   await emitPipeline("p-variant", withoutOverall(computeLayeredConfidence(ci)));
 
   // ── Step 3 Grok — Mechanism-Compatibility Gate ─────────────────────────────
-  const mech = getGeneMechanism(gene);
+  let mech = getGeneMechanism(gene);
+  // Out-of-table gene → research its established mechanism via xAI Live Search
+  // (cited + labeled), so the gate is set from real literature instead of the
+  // conservative default. Strictly additive: disabled/empty/error keeps the
+  // cautious behaviour and never invents a mechanism.
+  if (!mech && webSearchEnabled()) {
+    const research = await runStep("grok-mech-research", async () => {
+      try {
+        return await researchGeneMechanism({ geneSymbol: gene, clinicalContext: input.clinicalContext });
+      } catch (e) {
+        console.warn("[pipeline] mechanism research failed:", (e as Error).message);
+        return null;
+      }
+    });
+    if (research && research.data.found && research.data.mechanism !== "unknown") {
+      mech = {
+        mechanism: research.data.mechanism,
+        inheritanceMode: research.data.inheritanceMode === "unknown" ? "both" : research.data.inheritanceMode,
+        notes: `[Mechanism researched from published literature — not the curated table] ${research.data.rationale}`,
+        source: "Live Search (xAI web_search)",
+      };
+      const cites = research.citations.slice(0, 2).map((c) => c.title ?? c.url).join("; ");
+      await emitNarration(
+        "n-mech-research",
+        `${gene} isn't in our curated mechanism table, so I researched it: ${research.data.rationale}` +
+          (cites ? ` (sources: ${cites})` : ""),
+      );
+      trajectory.push(
+        `Researched mechanism for ${gene} (${research.data.mechanism}) from literature: ${research.data.rationale}` +
+          (research.citations.length ? ` [${research.citations.map((c) => c.url).join(", ")}]` : ""),
+      );
+    }
+  }
   const gateInput = {
     geneSymbol: gene,
     consequenceClass: resolved.consequenceClass,

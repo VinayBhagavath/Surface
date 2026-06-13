@@ -30,6 +30,14 @@ export const CrossSpeciesSchema = z.object({
 });
 export type CrossSpecies = z.infer<typeof CrossSpeciesSchema>;
 
+export const GeneMechanismResearchSchema = z.object({
+  mechanism: z.enum(["LoF", "GoF", "both", "unknown"]),
+  inheritanceMode: z.enum(["dominant", "recessive", "x-linked", "both", "unknown"]),
+  rationale: z.string(),
+  found: z.boolean(),
+});
+export type GeneMechanismResearch = z.infer<typeof GeneMechanismResearchSchema>;
+
 export const AcmgRowSchema = z.object({
   code: z.string(),
   direction: z.enum(["pathogenic", "benign"]),

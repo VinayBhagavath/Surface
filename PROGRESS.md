@@ -158,6 +158,25 @@ Phase 2 (real patient VCF upload + multi-variant annotation + selection) — DON
   not His — same R175 contact-residue hotspot; GoF gate-closing unaffected.)
   `pnpm build`, typecheck, lint, and 18 unit tests all green.
 
+Phase 3 (real reasoning + scoped Live Search) — DONE.
+- Reasoning mode (Responses API) on the judgment-heavy calls, keeping the
+  Zod-validated wrapper contract identical (callers unchanged): mechanism gate at
+  `effort: "medium"`, synthesis at `effort: "low"`. Predictor + cross-species
+  stay on the chat path (grok-4.3 reasons lightly there by default). Reasoning
+  calls never send presence/frequency_penalty/stop.
+- xAI Live Search (`tools:[{type:"web_search"}]`) scoped to ONLY out-of-table
+  genes: `lib/grok/mechanism-research.ts` researches the gene's established LoF
+  vs GoF mechanism with citations; the pipeline feeds that into the gate (labeled
+  "[Mechanism researched from published literature — not the curated table]") and
+  emits a cited narration + trajectory line. In-table genes trust the table (no
+  search). Europe PMC literature pass kept for synthesis grounding.
+- `webSearchEnabled()` (XAI_WEB_SEARCH, on by default) gates it — with search
+  off the pipeline still runs (research is additive); empty/error research keeps
+  the conservative gate and never invents a mechanism.
+- Verified live: reasoning gate closes a GoF gene (TP53 → gate 0.10, ~2s, valid
+  JSON); out-of-table NF1 research returns LoF + found:true with 16 real
+  citations (ClinGen/GeneReviews/OMIM), ~8s. build, typecheck, lint, tests green.
+
 ## Last Commit
 
 Integration merge commit on `main`; see `git log -1 --oneline` for the final

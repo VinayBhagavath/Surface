@@ -12,6 +12,13 @@ export function hasXai(): boolean {
   return Boolean(process.env.XAI_API_KEY);
 }
 
+/** Whether to use xAI Live Search (Responses-API web_search tool). Requires a
+ *  key and is on by default; set XAI_WEB_SEARCH=0 to disable. When off, the
+ *  pipeline still runs — scoped research is strictly additive. */
+export function webSearchEnabled(): boolean {
+  return hasXai() && process.env.XAI_WEB_SEARCH !== "0";
+}
+
 export function getXaiConfig(): XaiConfig {
   const apiKey = process.env.XAI_API_KEY;
   if (!apiKey) {

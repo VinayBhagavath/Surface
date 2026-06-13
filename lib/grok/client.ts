@@ -213,3 +213,59 @@ export async function callGrokJSON<T>(
     `Grok JSON (${label}) did not validate after retry: ${(lastErr as Error)?.message ?? lastErr}`,
   );
 }
+
+// ── web search (Live Search) ──────────────────────────────────────────────────
+// A schema-validated JSON call that may use xAI's server-side web_search tool,
+// returning the parsed object PLUS the real source citations the model used, so
+// callers can keep researched facts separated from measured evidence.
+export type GrokCitation = { url: string; title: string | null };
+
+type CitationAnnotation = { type?: string; url?: string; title?: string };
+type OutputContentPart = { annotations?: CitationAnnotation[] };
+type OutputItem = { type?: string; content?: OutputContentPart[] };
+
+function extractCitations(res: { output?: unknown }): GrokCitation[] {
+  const items = (res.output as OutputItem[] | undefined) ?? [];
+  const out: GrokCitation[] = [];
+  const seen = new Set<string>();
+  for (const item of items) {
+    if (item?.type !== "message") continue;
+    for (const part of item.content ?? []) {
+      for (const ann of part.annotations ?? []) {
+        if (ann?.type === "url_citation" && ann.url && !seen.has(ann.url)) {
+          seen.add(ann.url);
+          out.push({ url: ann.url, title: ann.title ?? null });
+        }
+      }
+    }
+  }
+  return out;
+}
+
+export async function callGrokWebSearchJSON<T>(
+  system: string,
+  user: string,
+  schema: ZodType<T>,
+  opts: GrokOpts = {},
+): Promise<{ data: T; citations: GrokCitation[] }> {
+  const cfg = getXaiConfig();
+  const model = opts.model ?? cfg.model;
+  const label = opts.label ?? "web-search";
+  const t = Date.now();
+  const res = await client().responses.create(
+    {
+      model,
+      instructions: system + JSON_SUFFIX,
+      input: [{ role: "user", content: user }],
+      reasoning: { effort: opts.reasoningEffort ?? "low" },
+      tools: [{ type: "web_search" }],
+      max_output_tokens: (opts.maxTokens ?? 800) + 3000, // reasoning + search summary headroom
+    } as OpenAI.Responses.ResponseCreateParamsNonStreaming,
+    { timeout: opts.timeoutMs ?? 120_000 },
+  );
+  logUsage(label, model, res.usage, Date.now() - t);
+  const text = (res.output_text ?? "").trim();
+  const citations = extractCitations(res as { output?: unknown });
+  const data = schema.parse(JSON.parse(extractJson(text)));
+  return { data, citations };
+}

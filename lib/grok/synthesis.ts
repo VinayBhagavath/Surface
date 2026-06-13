@@ -69,5 +69,10 @@ Output JSON with EXACTLY these keys:
     2,
   );
 
-  return callGrokJSON(system, user, SynthesisSchema, { maxTokens: 1600, label: "synthesis" });
+  return callGrokJSON(system, user, SynthesisSchema, {
+    maxTokens: 1600,
+    label: "synthesis",
+    // Reasoning, but kept low to favour responsiveness (it writes from given data).
+    reasoningEffort: "low",
+  });
 }

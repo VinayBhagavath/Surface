@@ -1,6 +1,13 @@
 // Barrel export for the Grok reasoning layer.
 
-export { callGrokText, callGrokJSON, type GrokOpts } from "@/lib/grok/client";
+export {
+  callGrokText,
+  callGrokJSON,
+  callGrokWebSearchJSON,
+  type GrokOpts,
+  type GrokCitation,
+} from "@/lib/grok/client";
+export { researchGeneMechanism } from "@/lib/grok/mechanism-research";
 export { predictorLeadership } from "@/lib/grok/predictor-leadership";
 export { mechanismGate } from "@/lib/grok/mechanism-gate";
 export { crossSpeciesCheck } from "@/lib/grok/cross-species";
