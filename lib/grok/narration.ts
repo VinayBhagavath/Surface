@@ -9,7 +9,7 @@ import { callGrokText } from "@/lib/grok/client";
 
 export async function narrate(fact: string): Promise<string> {
   const system = `Turn the given evidence note into ONE warm, plain, spoken-aloud sentence for a patient. No unexplained jargon. Do not add facts. Max two sentences.`;
-  return callGrokText(system, fact, { temperature: 0.5, maxTokens: 160 });
+  return callGrokText(system, fact, { temperature: 0.5, maxTokens: 160, label: "narrate" });
 }
 
 /** Answer a patient follow-up grounded ONLY in the supplied trajectory + gate
@@ -23,5 +23,5 @@ export async function answerFollowUp(input: {
 }): Promise<string> {
   const system = `You are the patient-facing voice of a VUS investigation. Answer the patient's question using ONLY the evidence context provided — do not invent new findings. Be warm, plain, and concise (2-4 sentences). If the answer isn't in the context, say so honestly and suggest who could answer it.`;
   const user = `Patient question: ${input.question}\n\nEvidence context for ${input.geneSymbol} (clinical context: ${input.clinicalContext}):\n${input.contextSummary}`;
-  return callGrokText(system, user, { temperature: 0.5, maxTokens: 350 });
+  return callGrokText(system, user, { temperature: 0.5, maxTokens: 350, label: "followup" });
 }

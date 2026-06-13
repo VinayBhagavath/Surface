@@ -30,6 +30,12 @@ import {
 import { PS3_MODEL_ORGANISM_CAVEAT } from "@/lib/reference/acmg";
 import { predictorLeadership, mechanismGate, crossSpeciesCheck, synthesis } from "@/lib/grok";
 import {
+  predictorLeadershipFallback,
+  mechanismGateFallback,
+  crossSpeciesFallback,
+  synthesisFallback,
+} from "@/lib/grok/fallbacks";
+import {
   computeLayeredConfidence,
   type LayeredConfidenceInput,
 } from "@/lib/confidence/layered-model";
@@ -149,19 +155,24 @@ export async function runEvidencePipeline(
 
   // ── Step 2 Grok — predictor leadership + disagreement ──────────────────────
   const csElementScore = (consFrag.raw as { elementScore?: number | null }).elementScore ?? null;
-  const pred = await runStep("grok-predictor", () =>
-    predictorLeadership({
-      geneSymbol: gene,
-      consequenceClass: resolved.consequenceClass,
-      alphamissense: mv.parsed.alphamissense,
-      revel: mv.parsed.revel,
-      cadd: mv.parsed.cadd,
-      spliceaiMax: mv.parsed.spliceaiMax,
-      sift: mv.parsed.sift,
-      polyphen: mv.parsed.polyphen,
-      conservation: { elementScore: csElementScore, gerp: mv.parsed.perResidue.gerp, phyloP: mv.parsed.perResidue.phyloP },
-    }),
-  );
+  const predictorInput = {
+    geneSymbol: gene,
+    consequenceClass: resolved.consequenceClass,
+    alphamissense: mv.parsed.alphamissense,
+    revel: mv.parsed.revel,
+    cadd: mv.parsed.cadd,
+    spliceaiMax: mv.parsed.spliceaiMax,
+    sift: mv.parsed.sift,
+    polyphen: mv.parsed.polyphen,
+    conservation: { elementScore: csElementScore, gerp: mv.parsed.perResidue.gerp, phyloP: mv.parsed.perResidue.phyloP },
+  };
+  let pred: Awaited<ReturnType<typeof predictorLeadership>>;
+  try {
+    pred = await runStep("grok-predictor", () => predictorLeadership(predictorInput));
+  } catch (e) {
+    console.warn("[pipeline] predictor reasoning degraded:", (e as Error).message);
+    pred = predictorLeadershipFallback(predictorInput);
+  }
   await emitNarration("n-pred", pred.disagreementNote ? `One thing to flag: ${pred.disagreementNote}` : pred.interpretation);
 
   ci.variantEffect = {
@@ -177,16 +188,21 @@ export async function runEvidencePipeline(
 
   // ── Step 3 Grok — Mechanism-Compatibility Gate ─────────────────────────────
   const mech = getGeneMechanism(gene);
-  const gate = await runStep("grok-gate", () =>
-    mechanismGate({
-      geneSymbol: gene,
-      consequenceClass: resolved.consequenceClass,
-      predictorDirection: pred.direction,
-      conservationSupport: pred.conservationSupport,
-      geneConstraint: { loeuf: ci.genePrior!.loeuf, pli: ci.genePrior!.pli, misZ: ci.genePrior!.misZ },
-      geneMechanism: mech ? { mechanism: mech.mechanism, inheritanceMode: mech.inheritanceMode, notes: mech.notes } : null,
-    }),
-  );
+  const gateInput = {
+    geneSymbol: gene,
+    consequenceClass: resolved.consequenceClass,
+    predictorDirection: pred.direction,
+    conservationSupport: pred.conservationSupport,
+    geneConstraint: { loeuf: ci.genePrior!.loeuf, pli: ci.genePrior!.pli, misZ: ci.genePrior!.misZ },
+    geneMechanism: mech ? { mechanism: mech.mechanism, inheritanceMode: mech.inheritanceMode, notes: mech.notes } : null,
+  };
+  let gate: Awaited<ReturnType<typeof mechanismGate>>;
+  try {
+    gate = await runStep("grok-gate", () => mechanismGate(gateInput));
+  } catch (e) {
+    console.warn("[pipeline] mechanism-gate reasoning degraded:", (e as Error).message);
+    gate = mechanismGateFallback();
+  }
   ci.mechanismGate = { value: gate.gate, reason: gate.reason };
   await emitNarration(
     "n-gate",
@@ -238,23 +254,32 @@ export async function runEvidencePipeline(
       mpTermName: ((f.raw as { mp_term_name?: string }).mp_term_name) ?? null,
       lethal: Boolean((f.raw as { viabilityLethal?: boolean }).viabilityLethal),
     }));
-  const cross = await runStep("grok-crossspecies", () =>
-    crossSpeciesCheck({
-      geneSymbol: gene,
-      clinicalContext: input.clinicalContext,
-      hpoTerms: hpo,
-      orthologQuality: ortholog.quality,
-      monarch: {
-        found: mon.fragment.found,
-        similarityScore: mon.result.similarityScore,
-        bestPair: mon.result.bestPair
-          ? { mpLabel: mon.result.bestPair.mpLabel, hpoLabel: mon.result.bestPair.hpoLabel }
-          : null,
-      },
-      impcFragments: impcForGrok,
+  const crossInput = {
+    geneSymbol: gene,
+    clinicalContext: input.clinicalContext,
+    hpoTerms: hpo,
+    orthologQuality: ortholog.quality,
+    monarch: {
+      found: mon.fragment.found,
+      similarityScore: mon.result.similarityScore,
+      bestPair: mon.result.bestPair
+        ? { mpLabel: mon.result.bestPair.mpLabel, hpoLabel: mon.result.bestPair.hpoLabel }
+        : null,
+    },
+    impcFragments: impcForGrok,
+    lethal: impcResult.lethal,
+  };
+  let cross: Awaited<ReturnType<typeof crossSpeciesCheck>>;
+  try {
+    cross = await runStep("grok-crossspecies", () => crossSpeciesCheck(crossInput));
+  } catch (e) {
+    console.warn("[pipeline] cross-species reasoning degraded:", (e as Error).message);
+    cross = crossSpeciesFallback({
+      monarchSimilarity: mon.result.similarityScore,
       lethal: impcResult.lethal,
-    }),
-  );
+      anyImpcFound: impcFrags.some((f) => f.found),
+    });
+  }
   await emitNarration("n-cross", cross.narration);
 
   // Re-publish IMPC fragments with Grok-assigned relevance (UI treats as update).
@@ -325,20 +350,31 @@ export async function runEvidencePipeline(
     ? `Mouse knockout is ${impcResult.lethalPhenotype} — an essentiality signal${gate.gate < 0.4 ? ", but suppressed by the mechanism gate" : ""}.`
     : null;
 
-  const syn = await runStep("grok-synthesis", () =>
-    synthesis({
+  const synthesisInput = {
+    geneSymbol: gene,
+    variant: input.variant,
+    proteinChange: resolved.proteinChange,
+    clinicalContext: input.clinicalContext,
+    computedOverall: overall,
+    pipeline,
+    trajectory,
+    predictorAgreement,
+    lethalitySignal,
+    mechanism: mech ? { mechanism: mech.mechanism, inheritanceMode: mech.inheritanceMode, notes: mech.notes } : null,
+  };
+  let syn: Awaited<ReturnType<typeof synthesis>>;
+  try {
+    syn = await runStep("grok-synthesis", () => synthesis(synthesisInput));
+  } catch (e) {
+    console.warn("[pipeline] synthesis reasoning degraded:", (e as Error).message);
+    syn = synthesisFallback({
       geneSymbol: gene,
       variant: input.variant,
-      proteinChange: resolved.proteinChange,
       clinicalContext: input.clinicalContext,
       computedOverall: overall,
       pipeline,
-      trajectory,
-      predictorAgreement,
-      lethalitySignal,
-      mechanism: mech ? { mechanism: mech.mechanism, inheritanceMode: mech.inheritanceMode, notes: mech.notes } : null,
-    }),
-  );
+    });
+  }
 
   const acmgRows: AcmgRow[] = syn.acmgRows.map((r) =>
     r.code.toUpperCase().startsWith("PS3") ? { ...r, caveat: PS3_MODEL_ORGANISM_CAVEAT } : r,

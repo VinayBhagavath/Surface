@@ -102,6 +102,34 @@ Additional checks:
   That browser-launched run completed with brief 200, overall `high`, and a
   visible Watch entry.
 
+## Active branch: `grok-reasoning-upload`
+
+Goal: make the Grok/xAI layer correct (real reasoning), ship a real patient
+VCF-upload + multi-variant annotation flow, prove it end-to-end on a real VCF,
+and merge to `main`. Phased with hard gates.
+
+Gate 0 (live xAI verification) — PASS. On the configured key: `grok-4.3` served;
+the Responses API accepts `reasoning:{effort}` (low/medium) with structured JSON
+output (`text.format` json_schema) and parses cleanly (~1.5–2s); Web Search
+(`tools:[{type:"web_search"}]`) is available and returns cited answers (~12s).
+
+Phase 1 (unify + harden the xAI client) — DONE.
+- One client/config/model: everything goes through `lib/grok/client.ts` +
+  `getXaiConfig()` → `grok-4.3` (via `XAI_MODEL`). `app/actions/ask-followup.ts`
+  now calls the canonical `answerFollowUp`; the `@ai-sdk/xai` / `grok-3` path and
+  its duplicate prompt are gone, and the dependency was removed from package.json.
+- Client gained a Responses-API reasoning transport (`reasoningEffort` opt) so
+  Phase 3 is just wiring; chat path unchanged for the lighter calls.
+- JSON-mode fallback is now per-call/transient (no process-global latch); Zod
+  validation + one self-repair retry preserved.
+- Reasoning-aware timeouts (45s non-reasoning / 120s reasoning) + per-call token
+  usage logging (incl. reasoning tokens), on in dev or with `GROK_DEBUG=1`.
+- Honest degradation: each of the 4 pipeline Grok calls is wrapped so a failure
+  after retries falls back to a deterministic, schema-valid result with an
+  explicit "AI reasoning unavailable" note (`lib/grok/fallbacks.ts`). Mechanism
+  gate fallback is a conservative 0.5 (never silently 1.0). Verified by
+  `lib/grok/fallbacks.test.ts` (typecheck + lint + 10 tests green).
+
 ## Last Commit
 
 Integration merge commit on `main`; see `git log -1 --oneline` for the final

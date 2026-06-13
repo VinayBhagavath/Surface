@@ -33,5 +33,6 @@ Output JSON with EXACTLY these keys:
 }`;
   return callGrokJSON(system, JSON.stringify(input, null, 2), MechanismGateSchema, {
     maxTokens: 500,
+    label: "gate",
   });
 }

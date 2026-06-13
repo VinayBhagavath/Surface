@@ -16,7 +16,6 @@
     "capture": "tsx scripts/capture-fixture.ts"
   },
   "dependencies": {
-    "@ai-sdk/xai": "^3.0.95",
     "@inngest/realtime": "^0.4.7",
     "ai": "^6.0.203",
     "class-variance-authority": "^0.7.1",

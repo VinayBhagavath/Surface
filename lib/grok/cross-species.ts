@@ -44,5 +44,6 @@ Output JSON with EXACTLY these keys and allowed values:
 relevanceById MUST contain one entry for every IMPC fragment id provided (use {} only if no fragments were given).`;
   return callGrokJSON(system, JSON.stringify(input, null, 2), CrossSpeciesSchema, {
     maxTokens: 900,
+    label: "cross-species",
   });
 }

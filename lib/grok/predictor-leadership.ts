@@ -34,5 +34,6 @@ Output JSON with EXACTLY these keys and allowed values:
 }`;
   return callGrokJSON(system, JSON.stringify(input, null, 2), PredictorLeadershipSchema, {
     maxTokens: 700,
+    label: "predictor",
   });
 }

@@ -72,5 +72,5 @@ Output JSON with EXACTLY these keys:
     2,
   );
 
-  return callGrokJSON(system, user, PatientSummaryGrokSchema, { maxTokens: 700 });
+  return callGrokJSON(system, user, PatientSummaryGrokSchema, { maxTokens: 700, label: "patient-summary" });
 }
