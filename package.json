@@ -1,0 +1,47 @@
+{
+  "name": "vus-resolver",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "vitest run",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test:watch": "vitest",
+    "inngest": "npx inngest-cli@latest dev -u http://localhost:3000/api/inngest",
+    "connectors": "tsx scripts/test-connectors.ts",
+    "capture": "tsx scripts/capture-fixture.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VinayBhagavath/Surface.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/VinayBhagavath/Surface/issues"
+  },
+  "homepage": "https://github.com/VinayBhagavath/Surface#readme",
+  "private": "true",
+  "dependencies": {
+    "@inngest/realtime": "^0.4.6",
+    "inngest": "^3.54.2",
+    "next": "^14.2.35",
+    "openai": "^6.42.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}

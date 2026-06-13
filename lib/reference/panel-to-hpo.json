@@ -1,0 +1,30 @@
+{
+  "_meta": {
+    "purpose": "Maps the clinical-context strings the intake form offers to HPO term IDs, for the Monarch MP<->HPO similarity query (Step 4/5). REFERENCE DATA, not a fallback. Keys are normalized lowercase/underscore. Person B's intake dropdown should offer the human-readable labels that map to these keys (see `labels`).",
+    "labels": {
+      "hypercholesterolemia": "High cholesterol / lipid disorder",
+      "cardiomyopathy": "Cardiomyopathy",
+      "arrhythmia": "Arrhythmia / long-QT",
+      "long_qt": "Long-QT syndrome",
+      "neurodevelopmental": "Neurodevelopmental / intellectual disability",
+      "epilepsy": "Epilepsy / seizures",
+      "immune": "Immune / immunodeficiency",
+      "skeletal": "Skeletal dysplasia",
+      "renal": "Kidney / renal",
+      "metabolic": "Metabolic disorder",
+      "cancer": "Cancer predisposition"
+    }
+  },
+  "hypercholesterolemia": ["HP:0003124", "HP:0003077", "HP:0001677", "HP:0002621"],
+  "cardiomyopathy": ["HP:0001638", "HP:0001644", "HP:0001639", "HP:0001645"],
+  "arrhythmia": ["HP:0011675", "HP:0001657", "HP:0001645", "HP:0001962"],
+  "long_qt": ["HP:0001657", "HP:0011675", "HP:0001645"],
+  "neurodevelopmental": ["HP:0001263", "HP:0001249", "HP:0000717"],
+  "epilepsy": ["HP:0001250", "HP:0002133", "HP:0001249"],
+  "immune": ["HP:0002715", "HP:0002721", "HP:0002960"],
+  "skeletal": ["HP:0000924", "HP:0002652", "HP:0003510"],
+  "skeletal_dysplasia": ["HP:0000924", "HP:0002652", "HP:0003510"],
+  "renal": ["HP:0000077", "HP:0000107", "HP:0012210"],
+  "metabolic": ["HP:0001939", "HP:0003774", "HP:0000819"],
+  "cancer": ["HP:0002664", "HP:0006725"]
+}

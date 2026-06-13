@@ -1,0 +1,91 @@
+{
+  "_meta": {
+    "purpose": "Curated gene disease-mechanism + inheritance reference. This is REFERENCE DATA (a code constant, like the ACMG criteria table) — NOT a fallback for a failed API query. Sourced from ClinGen gene-disease validity / dosage-sensitivity curations and OMIM. Drives the Step 3 mechanism-compatibility gate (does a loss-of-function mouse knockout model this gene's disease mechanism?) and the Step 4 IMPC zygosity match.",
+    "mechanism": "LoF = disease caused by loss of function (knockout is informative). GoF = gain of function / dominant-active (a knockout CANNOT model it — gate should close). both = documented LoF and GoF disease.",
+    "inheritanceMode": "Maps to the IMPC zygosity pulled in Step 4: dominant->heterozygote, recessive->homozygote, x-linked->hemizygote."
+  },
+  "LDLR": {
+    "inheritanceMode": "dominant",
+    "mechanism": "LoF",
+    "notes": "Familial hypercholesterolemia. Loss of LDL-receptor function reduces LDL clearance. Ldlr knockout mice recapitulate hypercholesterolemia/atherosclerosis, so a knockout phenotype is directly mechanism-applicable.",
+    "source": "ClinGen FH VCEP; OMIM 143890"
+  },
+  "CACNA1C": {
+    "inheritanceMode": "dominant",
+    "mechanism": "GoF",
+    "notes": "Timothy syndrome is caused by GAIN of function (impaired voltage-dependent inactivation of Cav1.2, prolonged calcium current). A loss-of-function knockout does NOT model this mechanism, so a dramatic Cacna1c-null phenotype (even embryonic lethality) is not informative for a GoF missense variant — the gate should close.",
+    "source": "ClinGen; OMIM 601005 (Timothy syndrome)"
+  },
+  "KCNQ1": {
+    "inheritanceMode": "dominant",
+    "mechanism": "LoF",
+    "notes": "Long-QT type 1 (LQT1): loss-of-function / dominant-negative reduction of the slow delayed-rectifier K+ current (IKs). Recessive Jervell-Lange-Nielsen with deafness. Rare gain-of-function variants cause short-QT/atrial fibrillation. Predominant disease mechanism for missense VUS interpretation is LoF, so a knockout is in principle informative.",
+    "source": "ClinGen; OMIM 192500 / 220400"
+  },
+  "BRCA1": {
+    "inheritanceMode": "dominant",
+    "mechanism": "LoF",
+    "notes": "Hereditary breast/ovarian cancer; loss of tumor-suppressor function.",
+    "source": "ClinGen; OMIM 113705"
+  },
+  "TP53": {
+    "inheritanceMode": "dominant",
+    "mechanism": "both",
+    "notes": "Li-Fraumeni. Both loss-of-function and dominant-negative/gain-of-function missense alleles are documented — mechanism is variant-specific, so model-organism applicability must be interpreted with caution.",
+    "source": "ClinGen; OMIM 191170"
+  },
+  "MLH1": {
+    "inheritanceMode": "dominant",
+    "mechanism": "LoF",
+    "notes": "Lynch syndrome; mismatch-repair loss of function.",
+    "source": "ClinGen; OMIM 120436"
+  },
+  "CFTR": {
+    "inheritanceMode": "recessive",
+    "mechanism": "LoF",
+    "notes": "Cystic fibrosis; loss of CFTR chloride-channel function. Recessive — IMPC homozygous data is the relevant zygosity.",
+    "source": "ClinGen; OMIM 602421"
+  },
+  "FGFR3": {
+    "inheritanceMode": "dominant",
+    "mechanism": "GoF",
+    "notes": "Achondroplasia / thanatophoric dysplasia caused by constitutive (gain-of-function) receptor activation. Fgfr3 knockout mice show skeletal OVERGROWTH (opposite of the disease), confirming a knockout cannot model the GoF mechanism — classic gate-closing example.",
+    "source": "ClinGen; OMIM 134934"
+  },
+  "PTEN": {
+    "inheritanceMode": "dominant",
+    "mechanism": "LoF",
+    "notes": "PTEN hamartoma tumor syndrome; loss of phosphatase tumor-suppressor function.",
+    "source": "ClinGen; OMIM 601728"
+  },
+  "LMNA": {
+    "inheritanceMode": "dominant",
+    "mechanism": "both",
+    "notes": "Laminopathies (dilated cardiomyopathy, EDMD, lipodystrophy). Both haploinsufficiency and dominant-negative mechanisms documented depending on allele.",
+    "source": "ClinGen; OMIM 150330"
+  },
+  "PKD1": {
+    "inheritanceMode": "dominant",
+    "mechanism": "LoF",
+    "notes": "Autosomal dominant polycystic kidney disease; loss of polycystin-1 function (two-hit). Pkd1-null mice develop cystic kidneys.",
+    "source": "ClinGen; OMIM 601313"
+  },
+  "COL2A1": {
+    "inheritanceMode": "dominant",
+    "mechanism": "both",
+    "notes": "Type II collagenopathies (skeletal dysplasias). Dominant-negative for most missense (glycine substitutions) and haploinsufficiency for null alleles.",
+    "source": "ClinGen; OMIM 120140"
+  },
+  "RET": {
+    "inheritanceMode": "dominant",
+    "mechanism": "both",
+    "notes": "MEN2 (gain-of-function activating missense) vs Hirschsprung (loss-of-function). Mechanism is strongly variant/domain-specific — a knockout models only the LoF (Hirschsprung) side.",
+    "source": "ClinGen; OMIM 164761"
+  },
+  "SCN5A": {
+    "inheritanceMode": "dominant",
+    "mechanism": "both",
+    "notes": "LQT3 (gain-of-function, persistent late current) vs Brugada/conduction disease (loss-of-function). Mechanism is variant-specific.",
+    "source": "ClinGen; OMIM 600163"
+  }
+}
