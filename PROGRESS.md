@@ -4,9 +4,10 @@ _Read this first when resuming. Trust it over assumptions; if it conflicts with 
 investigate before proceeding._
 
 ## Current status
-Step 4 (`useEvidenceRun` hook) complete and **verified** — fixture replay accumulates correctly
-(ldlr: 6/4 → 14/6 → 14 frag / 7 narr / complete:true, briefUrl set; upsert-by-id dedups 20→14
-fragments). Building on Person A's real JSON fixtures. **Next: Step 5 — the `/` intake route.**
+Step 5 (`/` intake) complete and **verified** — form + VCF affordance + clinical-context Select +
+3 demo launchers; submit fires `startRun` (emit attempted — ECONNREFUSED on this branch without
+the Inngest dev server, caught client-side) and navigates to `/session/<uuid>?demo=…`.
+**Next: Step 6 — `/session/[runId]` (the core experience).**
 
 Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typecheck` + `pnpm lint` clean.
 
@@ -25,12 +26,15 @@ Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typechec
 - [x] **Step 4** — `lib/useEvidenceRun.ts` (reducer: upsert fragments by id, replace pipeline on
       `pipeline_update`, accumulate narrations, set complete/briefUrl). Fixture replay verified at
       `/dev/run`. Live `subscribeToRun` stub throws until Step 9.
+- [x] **Step 5** — `app/page.tsx` intake: variant input + VCF upload + clinical-context `<Select>`
+      (`CLINICAL_CONTEXT_OPTIONS`) + 3 demo launchers. Submit → uuid runId → `startRun` → redirect to
+      `/session/[runId]?demo=<mapped>`. Verified: action fires with correct payload, navigation works.
 
 ## Next (immediate)
-Step 5 — `app/page.tsx` intake: variant input (HGVS/rsID) + small VCF-upload affordance +
-clinical-context `<Select>` from `lib/clinical-context-options.ts` (send the `value` as
-`clinicalContext`). On submit: `crypto.randomUUID()` runId → `startRun({runId, variant,
-clinicalContext})` → redirect to `/session/[runId]`. Accept: submit emits the Inngest event + navigates.
+Step 6 — `app/session/[runId]/page.tsx` (**await `params`** — Next 16): two-pane. Header =
+ConfidencePipelineStrip wired to `useEvidenceRun(runId, { source:"fixture", fixture: DEMO_RUNS[demo] })`
+(`?demo=`, default ldlr). Right = Evidence Trajectory (card per fragment + queued placeholders). Left =
+Conversation (narrations). On complete → "View Doctor Brief" → `/brief/[runId]` + watch confirmation.
 
 ## Known issues / TODOs
 - **Tailwind v4 + Turbopack stale cache:** after adding new `@theme` tokens + their utilities,
@@ -59,5 +63,4 @@ clinicalContext})` → redirect to `/session/[runId]`. Accept: submit emits the 
       `panel-to-hpo.json` labels). Send the `value` key as `clinicalContext`.
 
 ## Last commit
-Integration commit `7b22320` (converge types.ts + real fixtures). Step 4 committing now.
-Branch `yesh`. Run `git log --oneline -10`.
+Step 4 `a3db573`. Step 5 committing now. Branch `yesh`. Run `git log --oneline -10`.
