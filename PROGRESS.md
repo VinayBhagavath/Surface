@@ -4,11 +4,9 @@ _Read this first when resuming. Trust it over assumptions; if it conflicts with 
 investigate before proceeding._
 
 ## Current status
-Step 3 (fixtures) complete — my typed `kcnq1Run` (gate open) + `gateClosedRun` (gate closed)
-compile as `RealtimeEvent[]` (no casts). **Person A has ALSO pushed REAL captured fixtures** to
-`/fixtures/*-run.json` (kcnq1 / cacna1c / ldlr; `cacna1c` = gate-closed) + outputs `*-output.json`.
-**Next: Step 4 — the `useEvidenceRun` hook**, which should replay Person A's real JSON (adapt to
-`RealtimeEvent`). See `docs/CROSS-TEAM-ALIGNMENT.md`.
+Step 4 (`useEvidenceRun` hook) complete and **verified** — fixture replay accumulates correctly
+(ldlr: 6/4 → 14/6 → 14 frag / 7 narr / complete:true, briefUrl set; upsert-by-id dedups 20→14
+fragments). Building on Person A's real JSON fixtures. **Next: Step 5 — the `/` intake route.**
 
 Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typecheck` + `pnpm lint` clean.
 
@@ -24,14 +22,15 @@ Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typechec
       JSON**: `fixtures/runs.ts` wraps `*-run.json` (`RealtimeEvent[]`) + `*-output.json` (`RunOutput`).
       Scenario map: ldlr=gate-open · cacna1c=gate-closed · kcnq1=low. Also **adopted Person A's
       authoritative `lib/types.ts`** (adds RunOutput/EvidenceCard/evolved DoctorBrief).
+- [x] **Step 4** — `lib/useEvidenceRun.ts` (reducer: upsert fragments by id, replace pipeline on
+      `pipeline_update`, accumulate narrations, set complete/briefUrl). Fixture replay verified at
+      `/dev/run`. Live `subscribeToRun` stub throws until Step 9.
 
 ## Next (immediate)
-Step 4 — `lib/useEvidenceRun.ts`: stable return `{ fragments, pipeline, narrations, complete,
-briefUrl }`. Fixture mode replays a `RealtimeEvent[]` (from `fixtures/runs.ts`) on a ~700ms timer.
-Per Person A's alignment §6: **UPSERT fragments by `data.id`** (same id = update, e.g. IMPC relevance),
-**REPLACE `pipeline` on each `pipeline_update`** (cumulative), accumulate narrations, set
-complete/briefUrl on `complete`. Live mode = stub `subscribeToRun(runId, onEvent)` that throws
-"not yet wired" (Step 9). Throwaway test page shows the accumulating state advancing over time.
+Step 5 — `app/page.tsx` intake: variant input (HGVS/rsID) + small VCF-upload affordance +
+clinical-context `<Select>` from `lib/clinical-context-options.ts` (send the `value` as
+`clinicalContext`). On submit: `crypto.randomUUID()` runId → `startRun({runId, variant,
+clinicalContext})` → redirect to `/session/[runId]`. Accept: submit emits the Inngest event + navigates.
 
 ## Known issues / TODOs
 - **Tailwind v4 + Turbopack stale cache:** after adding new `@theme` tokens + their utilities,
@@ -60,5 +59,5 @@ complete/briefUrl on `complete`. Live mode = stub `subscribeToRun(runId, onEvent
       `panel-to-hpo.json` labels). Send the `value` key as `clinicalContext`.
 
 ## Last commit
-Step 3 rebased onto Person A's `2e36237`, then an integration commit (converge types.ts +
-real-JSON fixtures). Branch `yesh`. Run `git log --oneline -10`.
+Integration commit `7b22320` (converge types.ts + real fixtures). Step 4 committing now.
+Branch `yesh`. Run `git log --oneline -10`.
