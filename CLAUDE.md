@@ -71,3 +71,4 @@ Cross-Species segment that follows.
 - Full 10-step build plan       → **docs/plan-person-b.md**
 - Architecture / data flow       → **docs/architecture-v2.md**
 - Decision log                   → **docs/DECISIONS.md**
+- Person A ↔ Person B merge      → **docs/CROSS-TEAM-ALIGNMENT.md** (read before integrating)

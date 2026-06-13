@@ -6,7 +6,8 @@ investigate before proceeding._
 ## Current status
 Step 2 (visual system + ConfidencePipelineStrip valve) complete and **visually verified**
 (gate-open vs gate-closed obviously distinct; Mechanism Gate renders as a sluice valve).
-**Next: Step 3 — the fixtures** (`fixtures/kcnq1-run.ts`, `fixtures/gate-closed-run.ts`).
+**Next: Step 3 — wire fixtures** (Person A's real JSON is already in `/fixtures/` — wrap in
+typed replay helpers; `cacna1c-run.json` = gate-closed).
 
 Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typecheck` + `pnpm lint` clean.
 
@@ -35,13 +36,20 @@ suppressed by gate ≈ 0.1, overall low/moderate). Mark clearly as dev scaffolds
 - `/dev/pipeline` is a dev-only component gallery (safe to keep or delete before ship).
 
 ## Blocked on / awaiting Person A
-- [ ] **inngest major version (v3 vs v4)** — confirm v4 + publish via built-in `channel()/publish()`.
-- [ ] Confirm `/lib/types.ts` + `/lib/realtime-constants.ts` match their copies byte-for-byte.
-- [ ] `DoctorBrief` shape — PROPOSE & freeze together before building `/brief` (Step 7).
-- [ ] A captured real `RealtimeEvent[]` to replace the KCNQ1 fixture (drop-in, same shape).
-- [ ] The real `DoctorBrief` for KCNQ1 + the brief read path.
-- [ ] Confirm pipeline publishes `pipeline_update` after the Step 3 gate; joint gate-closing test.
-- [ ] Confirm exact clinical-context label strings (UI labels → HPO mapping on their side).
+- [ ] **inngest major version (v3 vs v4)** — Person A is on **v3 + realtimeMiddleware** today
+      (verified on `backend`). Person B is on v4. **Must pick one before merge** — see
+      `docs/CROSS-TEAM-ALIGNMENT.md` §1.
+- [x] **`/lib/realtime-constants.ts`** — matches Person A byte-for-byte.
+- [ ] **`/lib/types.ts`** — core stream types align; Person A has extra output types
+      (`EvidenceCard`, `RunOutput`, fuller `DoctorBrief`). **Use Person A's file at merge.**
+- [x] **Real `RealtimeEvent[]` fixtures** — Person A's JSON now in `/fixtures/*-run.json`
+      (ldlr / cacna1c / kcnq1). `cacna1c` = gate-closed scenario. See `fixtures/README.md`.
+- [x] **Brief read path** — `GET /api/brief/:runId` → `{ evidenceCard, doctorBrief }` on
+      `backend` (Person A adds route at merge; build `/brief` against `*-output.json` now).
+- [x] **`pipeline_update` after gate** — Person A publishes after Step 3 (gate set, overall
+      null) and again at end. Joint test with `cacna1c` at Step 9.
+- [x] **Clinical-context keys** — use `lib/clinical-context-options.ts` (mirrors Person A's
+      `panel-to-hpo.json` labels). Send the `value` key as `clinicalContext`.
 
 ## Last commit
-`05db1b2` (Step 1). Step 2 committing now on branch `yesh`. Run `git log --oneline -8`.
+Run `git log --oneline -8` on branch `yesh`.

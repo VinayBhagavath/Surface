@@ -1,0 +1,381 @@
+[
+  {
+    "type": "narration",
+    "data": "Starting the investigation — gathering what's known about this variant."
+  },
+  {
+    "type": "fragment",
+    "data": {
+      "id": "step0-ensembl-vep",
+      "source": "ensembl_vep",
+      "step": 0,
+      "queryTime": "2026-06-13T19:09:32.417Z",
+      "found": true,
+      "summary": "Ensembl VEP: missense variant in KCNQ1 (p.Ala194Val) — GRCh38 11:2570731",
+      "raw": {
+        "resolved": {
+          "input": "rs2133727494",
+          "rsId": "rs2133727494",
+          "geneSymbol": "KCNQ1",
+          "geneId": "ENSG00000053918",
+          "mostSevereConsequence": "missense_variant",
+          "consequenceClass": "missense",
+          "chrom": "11",
+          "pos": 2570731,
+          "alleleString": "C/T",
+          "proteinChange": "p.Ala194Val"
+        },
+        "most_severe_consequence": "missense_variant",
+        "transcript": {
+          "biotype": "protein_coding",
+          "sift_prediction": "deleterious_low_confidence",
+          "protein_end": 194,
+          "cdna_start": 672,
+          "sift_score": 0.01,
+          "codons": "gCc/gTc",
+          "canonical": 1,
+          "polyphen_prediction": "possibly_damaging",
+          "variant_allele": "T",
+          "hgnc_id": "HGNC:6294",
+          "hgvsc": "ENST00000155840.12:c.581C>T",
+          "polyphen_score": 0.814,
+          "mane_select": "NM_000218.3",
+          "gene_symbol_source": "HGNC",
+          "transcript_id": "ENST00000155840",
+          "gene_symbol": "KCNQ1",
+          "cdna_end": 672,
+          "hgvsp": "ENSP00000155840.2:p.Ala194Val",
+          "cds_start": 581,
+          "consequence_terms": [
+            "missense_variant"
+          ],
+          "gene_id": "ENSG00000053918",
+          "cds_end": 581,
+          "amino_acids": "A/V",
+          "mane": [
+            "MANE_Select"
+          ],
+          "strand": 1,
+          "protein_start": 194,
+          "impact": "MODERATE"
+        }
+      }
+    }
+  },
+  {
+    "type": "narration",
+    "data": "This is a missense variant in KCNQ1. I'll check the human evidence first, then look across species."
+  },
+  {
+    "type": "fragment",
+    "data": {
+      "id": "step1-gnomad-constraint",
+      "source": "gnomad_constraint",
+      "step": 1,
+      "queryTime": "2026-06-13T19:09:32.546Z",
+      "found": true,
+      "summary": "gnomAD constraint: LOEUF 0.86, pLI 0.00, missense-z 2.15 — moderately constrained (GRCh38 (gnomAD v4))",
+      "raw": {
+        "geneId": "ENSG00000053918",
+        "assembly": "GRCh38 (gnomAD v4)",
+        "constraint": {
+          "pli": 1.927176888160678e-11,
+          "oe_lof": 0.6772482898756167,
+          "oe_lof_upper": 0.8592906496161417,
+          "oe_mis": 0.8358986044073895,
+          "mis_z": 2.151575996248634,
+          "syn_z": -1.0970338510727695,
+          "lof_z": 2.3289339137135174,
+          "exp_lof": 72.35160388370907,
+          "obs_lof": 49
+        },
+        "loeuf": 0.8592906496161417,
+        "pli": 1.927176888160678e-11,
+        "misZ": 2.151575996248634
+      }
+    }
+  },
+  {
+    "type": "fragment",
+    "data": {
+      "id": "step2-myvariant-clinvar",
+      "source": "myvariant",
+      "step": 2,
+      "queryTime": "2026-06-13T19:09:32.560Z",
+      "found": true,
+      "summary": "ClinVar: classified as 'Uncertain significance' (2 records)",
+      "raw": {
+        "status": "vus",
+        "significance": "Uncertain significance",
+        "alreadyClassified": false,
+        "recordCount": 2
+      }
+    }
+  },
+  {
+    "type": "fragment",
+    "data": {
+      "id": "step2-myvariant-gnomad-freq",
+      "source": "myvariant",
+      "step": 2,
+      "queryTime": "2026-06-13T19:09:32.560Z",
+      "found": true,
+      "summary": "gnomAD: allele frequency not observed in population databases",
+      "relevance": "medium",
+      "raw": {
+        "af": null,
+        "common": false
+      }
+    }
+  },
+  {
+    "type": "fragment",
+    "data": {
+      "id": "step2-myvariant-dbnsfp",
+      "source": "myvariant",
+      "step": 2,
+      "queryTime": "2026-06-13T19:09:32.560Z",
+      "found": true,
+      "summary": "In-silico predictors: AlphaMissense 0.25 (likely benign), REVEL 0.68, CADD 23.4",
+      "raw": {
+        "alphamissense": {
+          "score": 0.2471,
+          "label": "likely benign",
+          "predRaw": [
+            "B",
+            "B",
+            "B"
+          ]
+        },
+        "revel": 0.677,
+        "cadd": 23.4,
+        "sift": "T",
+        "polyphen": "P",
+        "spliceaiMax": null,
+        "perResidueConservation": {
+          "gerp": 4.4,
+          "phyloP": 2.959
+        }
+      }
+    }
+  },
+  {
+    "type": "fragment",
+    "data": {
+      "id": "step2-ensembl-conservation",
+      "source": "ensembl_conservation",
+      "step": 2,
+      "queryTime": "2026-06-13T19:09:32.561Z",
+      "found": true,
+      "summary": "Ensembl conservation: lies within a GERP constrained element (score 47.9), GERP++ 4.4, phyloP 2.96 — highly conserved across mammals",
+      "raw": {
+        "chrom": "11",
+        "pos": 2570731,
+        "inElement": true,
+        "elementScore": 47.9,
+        "perResidueGerp": 4.4,
+        "perResiduePhyloP": 2.959,
+        "elements": [
+          {
+            "score": 47.9,
+            "seq_region_name": "11",
+            "strand": -1,
+            "start": 2570625,
+            "feature_type": "constrained",
+            "end": 2570761,
+            "ID": 95940000150065
+          }
+        ]
+      }
+    }
+  },
+  {
+    "type": "pipeline_update",
+    "data": {
+      "genePrior": {
+        "value": 0.58,
+        "label": "moderate",
+        "reason": "Gene constraint: LOEUF 0.86, pLI 0.00, missense-z 2.15 → moderate prior that variation in this gene matters."
+      },
+      "variantEffect": null,
+      "mechanismGate": null,
+      "crossSpecies": null,
+      "overall": null
+    }
+  },
+  {
+    "type": "narration",
+    "data": "No conclusive human-only answer — checking what's known in mice."
+  },
+  {
+    "type": "narration",
+    "data": "One thing to flag: REVEL (0.677) and CADD (23.4) suggest deleteriousness while AlphaMissense does not"
+  },
+  {
+    "type": "pipeline_update",
+    "data": {
+      "genePrior": {
+        "value": 0.58,
+        "label": "moderate",
+        "reason": "Gene constraint: LOEUF 0.86, pLI 0.00, missense-z 2.15 → moderate prior that variation in this gene matters."
+      },
+      "variantEffect": {
+        "value": 0.41,
+        "label": "moderate",
+        "reason": "AlphaMissense headline, predictors DISAGREE, conservation supports → moderate variant-effect evidence."
+      },
+      "mechanismGate": null,
+      "crossSpecies": null,
+      "overall": null
+    }
+  },
+  {
+    "type": "narration",
+    "data": "KCNQ1 LoF is the predominant mechanism for disease-associated missense variants, so a knockout remains informative for this variant despite its benign in silico prediction."
+  },
+  {
+    "type": "pipeline_update",
+    "data": {
+      "genePrior": {
+        "value": 0.58,
+        "label": "moderate",
+        "reason": "Gene constraint: LOEUF 0.86, pLI 0.00, missense-z 2.15 → moderate prior that variation in this gene matters."
+      },
+      "variantEffect": {
+        "value": 0.41,
+        "label": "moderate",
+        "reason": "AlphaMissense headline, predictors DISAGREE, conservation supports → moderate variant-effect evidence."
+      },
+      "mechanismGate": {
+        "value": 0.75,
+        "reason": "KCNQ1 LoF is the predominant mechanism for disease-associated missense variants, so a knockout remains informative for this variant despite its benign in silico prediction."
+      },
+      "crossSpecies": null,
+      "overall": null
+    }
+  },
+  {
+    "type": "fragment",
+    "data": {
+      "id": "step4-ensembl-diopt",
+      "source": "ensembl_diopt",
+      "step": 4,
+      "queryTime": "2026-06-13T19:09:41.011Z",
+      "found": true,
+      "summary": "Ensembl: clean 1:1 mouse ortholog (Kcnq1, 89% identity), DIOPT rank unavailable",
+      "raw": {
+        "mouseGeneSymbol": "Kcnq1",
+        "mouseGeneId": "ENSMUSG00000009545",
+        "orthologType": "ortholog_one2one",
+        "percentIdentity": 88.7725,
+        "quality": "high",
+        "dioptScore": null,
+        "dioptMax": null,
+        "homologyCount": 1
+      }
+    }
+  },
+  {
+    "type": "fragment",
+    "data": {
+      "id": "step4-impc-none",
+      "source": "impc",
+      "step": 4,
+      "queryTime": "2026-06-13T19:09:43.344Z",
+      "found": false,
+      "summary": "IMPC: no significant knockout phenotype recorded for Kcnq1",
+      "relevance": "unscored",
+      "raw": {
+        "marker_symbol": "Kcnq1",
+        "numFound": 0
+      }
+    }
+  },
+  {
+    "type": "fragment",
+    "data": {
+      "id": "step4-monarch-phenodigm",
+      "source": "monarch_phenodigm",
+      "step": 4,
+      "queryTime": "2026-06-13T19:09:44.087Z",
+      "found": false,
+      "summary": "Monarch/Phenodigm: similarity not computed — no mouse phenotype (MP) terms to compare (mouse terms passed to Grok for direct review in Step 5)",
+      "raw": {
+        "mpTermIds": [],
+        "hpoTermIds": [
+          "HP:0001657",
+          "HP:0011675",
+          "HP:0001645"
+        ]
+      }
+    }
+  },
+  {
+    "type": "narration",
+    "data": "No Monarch similarity or IMPC phenotype fragments were available for KCNQ1, so cross-species evidence cannot be evaluated despite the known human association with long QT."
+  },
+  {
+    "type": "pipeline_update",
+    "data": {
+      "genePrior": {
+        "value": 0.58,
+        "label": "moderate",
+        "reason": "Gene constraint: LOEUF 0.86, pLI 0.00, missense-z 2.15 → moderate prior that variation in this gene matters."
+      },
+      "variantEffect": {
+        "value": 0.41,
+        "label": "moderate",
+        "reason": "AlphaMissense headline, predictors DISAGREE, conservation supports → moderate variant-effect evidence."
+      },
+      "mechanismGate": {
+        "value": 0.75,
+        "reason": "KCNQ1 LoF is the predominant mechanism for disease-associated missense variants, so a knockout remains informative for this variant despite its benign in silico prediction."
+      },
+      "crossSpecies": {
+        "value": 0.08,
+        "label": "low",
+        "reason": "Ortholog high, best phenotype relevance n/a → cross-species low after gating (raw 0.1 × gate 0.75)."
+      },
+      "overall": {
+        "label": "low",
+        "reason": "Overall low (gene-prior 0.58, variant-effect 0.41, cross-species 0.08). Not yet strong enough to act on."
+      }
+    }
+  },
+  {
+    "type": "narration",
+    "data": "The KCNQ1 p.Ala194Val variant is absent from gnomAD, lies in a conserved mammalian element, and shows mixed computational predictions with REVEL and CADD flagging possible damage while AlphaMissense calls it benign. Human gene-level constraint is only moderate and no functional assays or segregation data are available. Mouse knockout data yielded no relevant phenotype, keeping cross-species support low even after the mechanism gate confirmed that LoF remains informative for this missense change."
+  },
+  {
+    "type": "pipeline_update",
+    "data": {
+      "genePrior": {
+        "value": 0.58,
+        "label": "moderate",
+        "reason": "Gene constraint: LOEUF 0.86, pLI 0.00, missense-z 2.15 → moderate prior that variation in this gene matters."
+      },
+      "variantEffect": {
+        "value": 0.41,
+        "label": "moderate",
+        "reason": "AlphaMissense headline, predictors DISAGREE, conservation supports → moderate variant-effect evidence."
+      },
+      "mechanismGate": {
+        "value": 0.75,
+        "reason": "KCNQ1 LoF is the predominant mechanism for disease-associated missense variants, so a knockout remains informative for this variant despite its benign in silico prediction."
+      },
+      "crossSpecies": {
+        "value": 0.08,
+        "label": "low",
+        "reason": "Ortholog high, best phenotype relevance n/a → cross-species low after gating (raw 0.1 × gate 0.75)."
+      },
+      "overall": {
+        "label": "low",
+        "reason": "Overall low (gene-prior 0.58, variant-effect 0.41, cross-species 0.08). Not yet strong enough to act on."
+      }
+    }
+  },
+  {
+    "type": "complete",
+    "briefUrl": "/brief/kcnq1-fixture"
+  }
+]
