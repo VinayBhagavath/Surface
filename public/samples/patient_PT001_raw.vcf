@@ -1,0 +1,30 @@
+##fileformat=VCFv4.2
+##fileDate=20260613
+##source=SYNTHETIC_TEST_FIXTURE_not_real_patient_data
+##reference=GRCh38
+##contig=<ID=chr2>
+##contig=<ID=chr3>
+##contig=<ID=chr5>
+##contig=<ID=chr10>
+##contig=<ID=chr11>
+##contig=<ID=chr13>
+##contig=<ID=chr16>
+##contig=<ID=chr17>
+##contig=<ID=chr22>
+##FILTER=<ID=PASS,Description="All filters passed">
+##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
+##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read depth">
+##FORMAT=<ID=GQ,Number=1,Type=Integer,Description="Genotype quality">
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	SAMPLE_PT001
+chr17	43093464	rs80357064	G	A	100	PASS	.	GT:DP:GQ	0/1:40:99
+chr13	32339132	rs80359024	T	C	100	PASS	.	GT:DP:GQ	0/1:41:99
+chr13	32363533	rs81002830	A	G	100	PASS	.	GT:DP:GQ	0/1:42:99
+chr2	47406952	rs63750447	C	T	100	PASS	.	GT:DP:GQ	0/1:43:99
+chr3	37017547	rs267607853	C	T	100	PASS	.	GT:DP:GQ	0/1:44:99
+chr5	112839514	rs1801155	T	A	100	PASS	.	GT:DP:GQ	0/1:45:99
+chr17	7674220	rs28934578	C	T	100	PASS	.	GT:DP:GQ	0/1:46:99
+chr10	87933147	rs121909229	G	A	100	PASS	.	GT:DP:GQ	0/1:47:99
+chr16	23603606	rs180177143	A	G	100	PASS	.	GT:DP:GQ	0/1:48:99
+chr22	28695868	rs17879961	T	C	100	PASS	.	GT:DP:GQ	0/1:49:99
+chr11	108236167	rs1800057	C	G	100	PASS	.	GT:DP:GQ	0/1:50:99
+chr2	47806094	rs267608078	A	G	100	PASS	.	GT:DP:GQ	0/1:51:99

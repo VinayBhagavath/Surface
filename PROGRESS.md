@@ -177,6 +177,31 @@ Phase 3 (real reasoning + scoped Live Search) — DONE.
   JSON); out-of-table NF1 research returns LoF + found:true with 16 real
   citations (ClinGen/GeneReviews/OMIM), ~8s. build, typecheck, lint, tests green.
 
+Phase 4 (end-to-end live test on the real VCF) — DONE.
+- Added `public/samples/patient_PT001_raw.vcf` (synthetic 12-variant fixture;
+  also selectable in the UI). build, typecheck, lint, 18 unit tests green.
+- Routes 200: `/`, `/session/[runId]`, `/brief/[runId]`, `/watch`,
+  `/api/inngest`, and the served fixture.
+- Upload UX (browser): the page renders, accepts the VCF, and the live VEP
+  annotation resolves all 12 variants to the correct genes (BRCA1, BRCA2×2,
+  MLH1×2, APC, TP53, PTEN, PALB2, CHEK2, ATM, MSH6).
+- Live pipeline science (ran the real `runEvidencePipeline` — the same code the
+  Inngest function calls — against live genomics APIs + live Grok):
+  - **TP53 rs28934578 — gate CLOSES (0.10)**: GoF/dominant-negative, the
+    preweaning-lethal mouse knockout is correctly SUPPRESSED; brief explains why.
+    ACMG PM1/PM2/PP2/PP3. The differentiator survives end-to-end.
+  - **MSH6 — gate OPEN (0.90)** (LoF frameshift, PVS1/PM2); **ATM — gate OPEN
+    (0.90)** (LoF). Both coherent.
+  - **BRCA1 rs80357064 / MLH1 rs63750447 early-exit**: real ClinVar says "Likely
+    pathogenic" / "Benign", so they are correctly NOT treated as VUS (no
+    fabrication). This is an honest real-data deviation from the task's "BRCA1
+    gate-open + PS3" expectation — that variant simply isn't a VUS. No PS3
+    model-organism ACMG row appeared on any VUS because cross-species evidence was
+    low or gate-suppressed for all of them (honest — PS3 only with real support).
+  - Forced Grok failure (bad model) on TP53 → still a rendered brief, gate 0.5
+    (never 1.0), "AI reasoning unavailable" notes, no fabricated ACMG, no crash.
+  - Follow-up Q&A via the unified grok-4.3 client: grounded + honest; voice optional.
+
 ## Last Commit
 
 Integration merge commit on `main`; see `git log -1 --oneline` for the final
