@@ -4,13 +4,14 @@ _Read this first when resuming. Trust it over assumptions; if it conflicts with 
 investigate before proceeding._
 
 ## Current status
-Step 8 (`/watch`) complete and **verified** — Watcher dashboard: table of registered variants
-(gene/variant, clinical context, re-check cadence per row, last-checked, result) with BOTH states
-(checked—no change / update found→brief). Placeholder data; Person A's cron Watcher fills at merge.
+Step 10 (Grok voice) complete and **verified** — browser Web Speech for TTS/STT (xAI has no
+speech models) + **Grok grok-3** for follow-up Q&A grounded in the run's evidence. Verified: a real
+Grok answer citing the actual evidence (AlphaMissense/REVEL/CADD/LOEUF/ClinVar), no hallucination;
+voice toggle + composer render (hydration mismatch fixed via `useSyncExternalStore`); strict text
+fallback. 9 of 10 steps done.
 
-**Next: Step 10 — Grok VOICE first** (unblocked: user added a real `XAI_API_KEY` to gitignored
-`.env.local` → testable). **Then Step 9 — live wiring** (NOT solo-verifiable: needs Person A's
-backend routes merged + the v3/v4 decision + a joint test; I'll implement it ready-to-flip).
+**Next / remaining: Step 9 — live Realtime wiring.** Implement ready-to-flip; NOT solo-verifiable
+(needs Person A's `backend` routes merged + the inngest v3/v4 decision + a joint test).
 
 Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typecheck` + `pnpm lint` clean.
 
@@ -43,14 +44,17 @@ Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typechec
       (gene/variant, clinical context, re-check cadence, last-checked, result) — both states +
       "update found → brief". Session "Watching…" note links here. Placeholder data.
 
+- [x] **Step 10** — Grok voice (additive). `lib/voice/useSpeech.ts` (browser TTS/STT, SSR-safe via
+      `useSyncExternalStore`); `app/actions/ask-followup.ts` (Grok grok-3, grounded Q&A, returns a
+      result object — never throws). SessionView: voice toggle (auto-speak narrations) + mic/text
+      follow-up composer + Q&A thread. Verified a real grounded Grok answer; strict text fallback.
+
 ## Next (immediate)
-Step 10 (Grok voice) — FIRST, since it's unblocked + testable (XAI_API_KEY provided). CHECK current
-`@ai-sdk/xai` + AI SDK v6 speech/transcription docs. Speak each `narration` as it arrives (transcript
-stays in the conversation pane, in sync); optional voice input → conversation message; strict text
-fallback if key missing or API errors. Live in `/lib/voice/**`.
-Then Step 9 (live wiring) — implement `subscribeToRun` consuming Person A's `GET /api/realtime-token`
-+ `subscribe` (inngest/realtime v4); wire `/brief` to `GET /api/brief/:runId`; keep fixture default +
-`?live` opt-in. NOT solo-verifiable (needs Person A backend merged + v3/v4 decision + joint test).
+Step 9 (live wiring) — implement `subscribeToRun` in `useEvidenceRun` consuming Person A's
+`GET /api/realtime-token` + `subscribe` (inngest/realtime v4); wire `/brief` to `GET /api/brief/:runId`.
+Keep `source:"fixture"` default + add a `?live` opt-in. CHECK current Inngest Realtime docs first.
+NOT solo-verifiable on `yesh` (those routes live on Person A's `backend`); needs the inngest v3/v4
+decision + a joint test. I'll implement ready-to-flip and document the joint checklist.
 
 ## Known issues / TODOs
 - **Tailwind v4 + Turbopack stale cache:** after adding new `@theme` tokens + their utilities,
@@ -79,4 +83,4 @@ Then Step 9 (live wiring) — implement `subscribeToRun` consuming Person A's `G
       `panel-to-hpo.json` labels). Send the `value` key as `clinicalContext`.
 
 ## Last commit
-Step 7 `59c334d`. Step 8 committing now. Branch `yesh`. Run `git log --oneline -12`.
+Step 8 `3c5da46`. Step 10 committing now. Branch `yesh`. Run `git log --oneline -14`.

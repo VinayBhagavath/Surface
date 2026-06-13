@@ -77,6 +77,14 @@ Terse log of non-obvious choices so a future session doesn't re-litigate settled
   `*-output.json` (`RunOutput`) with contained `as` casts (the README-endorsed pattern for JSON
   imports). Scenario map: **ldlr** = gate-open/high · **cacna1c** = gate-closed · **kcnq1** = low.
 
+- **Voice = browser Web Speech + Grok for reasoning.** Verified `@ai-sdk/xai` exposes only
+  language/image/embedding models — **no speech/transcription**. So TTS (speak narrations) + STT
+  (voice input) use the browser Web Speech API (`lib/voice/useSpeech.ts`, graceful no-op fallback);
+  **Grok** (`@ai-sdk/xai` `grok-3` + `XAI_API_KEY`) powers the follow-up Q&A grounded in the run's
+  evidence (`app/actions/ask-followup.ts`, returns a result object — never throws). Capability
+  detection uses `useSyncExternalStore` (server snapshot = false) to avoid a hydration mismatch.
+  Voice is strictly optional: text Q&A works fully without it.
+
 ## Pending cross-team items (see docs/CROSS-TEAM-ALIGNMENT.md + PROGRESS.md)
 - **inngest major version — v3 vs v4 (TOP merge blocker).** Person A is verified on **v3** +
   `realtimeMiddleware` (on `backend`); Person B is on **v4** (built-in realtime, no middleware).
