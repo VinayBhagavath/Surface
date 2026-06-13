@@ -19,8 +19,12 @@ export type PatientSummary = {
   body: string[];
   /** What the mouse research contributed, in plain words (or null if N/A). */
   mouseLine: string | null;
+  /** One-liner: what this result means for the patient's CRISPR / gene-therapy plan. */
+  therapyNote: string;
   /** What to do next — always frames the doctor as the decision-maker. */
   nextStep: string;
+  /** Whether the prose was written by Grok or the deterministic fallback. */
+  source: "grok" | "fallback";
 };
 
 function contextLabel(key: string): string {
@@ -99,12 +103,21 @@ export function buildPatientSummary(output: RunOutput): PatientSummary {
       ? "Share this with your doctor or genetic counselor. New research or family testing could change the picture later — the system keeps watching for updates."
       : "Bring this to your doctor or genetic counselor. They can weigh it alongside your personal and family history before any decisions are made.";
 
+  const therapyNote =
+    overall === "high"
+      ? `For a CRISPR or gene-therapy plan targeting ${gene}, this change looks like a real, relevant target — confirm it with your care team before proceeding.`
+      : overall === "moderate"
+        ? `Before a CRISPR or gene-therapy plan treats this ${gene} change as the target, your care team should confirm it — the evidence isn't fully settled yet.`
+        : `This ${gene} change isn't yet proven to be the cause, so it shouldn't be assumed as the CRISPR or gene-therapy target until more evidence is in.`;
+
   return {
     confidence: overall,
     verdict: VERDICT[overall],
     headline: HEADLINE[overall](gene, ctx),
     body,
     mouseLine,
+    therapyNote,
     nextStep,
+    source: "fallback",
   };
 }

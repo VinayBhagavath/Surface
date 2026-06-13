@@ -15,7 +15,8 @@ import { ArrowLeft, ArrowRight, Check, Eye, Loader2 } from "lucide-react";
 import { useEvidenceRun } from "@/lib/useEvidenceRun";
 import { DEMO_BY_ID, DEMO_OUTPUTS, DEMO_RUNS, type DemoId } from "@/fixtures/runs";
 import { sequenceContextFromCard } from "@/lib/sequence";
-import { buildPatientSummary } from "@/lib/patient-summary";
+import { buildPatientSummary, type PatientSummary } from "@/lib/patient-summary";
+import { summarizeForPatient } from "@/app/actions/patient-summary";
 import { TRACE_STAGES, stageStatuses, type StageStatus } from "@/lib/agent-trace";
 import { SequenceViewer } from "@/components/SequenceViewer";
 import type { ConfidenceLabel } from "@/lib/types";
@@ -76,7 +77,6 @@ export function SessionView({
   const meta = DEMO_BY_ID[demo];
   const output = DEMO_OUTPUTS[demo];
   const seqCtx = React.useMemo(() => sequenceContextFromCard(output.evidenceCard), [output]);
-  const summary = React.useMemo(() => buildPatientSummary(output), [output]);
 
   const displayGene = output.evidenceCard.geneSymbol || meta.gene;
   const displayVariant = variant?.trim() || meta.variant;
@@ -88,6 +88,21 @@ export function SessionView({
   });
 
   const statuses = stageStatuses({ fragments, pipeline, complete });
+
+  // Patient summary: written by Grok on completion (grounded in the real run
+  // output), with a deterministic fallback so it always renders.
+  const [summary, setSummary] = React.useState<PatientSummary | null>(null);
+  const [writing, setWriting] = React.useState(false);
+  const requestedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (!complete || requestedRef.current) return;
+    requestedRef.current = true;
+    setWriting(true);
+    summarizeForPatient({ runId, demo })
+      .then((s) => setSummary(s))
+      .catch(() => setSummary(buildPatientSummary(output)))
+      .finally(() => setWriting(false));
+  }, [complete, runId, demo, output]);
 
   const briefParams = new URLSearchParams({ demo });
   if (variant) briefParams.set("variant", variant);
@@ -149,10 +164,20 @@ export function SessionView({
           </ul>
         </section>
 
-        {/* 3 — plain-language summary */}
+        {/* 3 — plain-language summary (written by Grok on completion) */}
         <section className="space-y-3">
           <h2 className="font-serif text-xl font-semibold text-foreground">What this means</h2>
-          {complete ? (
+          {!complete ? (
+            <div className="flex items-center gap-3 rounded-xl border border-dashed bg-card/50 p-5 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              Gathering the evidence — your plain-language summary will appear here.
+            </div>
+          ) : !summary || writing ? (
+            <div className="flex items-center gap-3 rounded-xl border border-dashed bg-card/50 p-5 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" />
+              Writing your summary in plain language…
+            </div>
+          ) : (
             <div className="seg-in space-y-4 rounded-xl border bg-card p-5">
               <span
                 className={cn(
@@ -180,6 +205,14 @@ export function SessionView({
                 )}
               </div>
 
+              {/* the CRISPR / gene-therapy one-liner */}
+              <div className="rounded-lg border-l-[3px] border-primary bg-primary/5 p-3.5">
+                <p className="text-pretty text-sm leading-relaxed text-foreground/90">
+                  <span className="font-medium">For your treatment plan: </span>
+                  {summary.therapyNote}
+                </p>
+              </div>
+
               <div className="rounded-lg bg-muted/50 p-3.5">
                 <p className="text-pretty text-sm leading-relaxed text-foreground/90">
                   <span className="font-medium">What to do next: </span>
@@ -201,11 +234,12 @@ export function SessionView({
                   <Eye className="size-3.5" /> We&rsquo;ll keep watching for new evidence
                 </Link>
               </div>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3 rounded-xl border border-dashed bg-card/50 p-5 text-sm text-muted-foreground">
-              <Loader2 className="size-4 animate-spin" />
-              Gathering the evidence — your plain-language summary will appear here.
+
+              <p className="pt-1 font-mono text-[0.6rem] uppercase tracking-wider text-muted-foreground/70">
+                {summary.source === "grok"
+                  ? "Summary written by Grok, grounded in this run's evidence"
+                  : "Summary generated from this run's evidence"}
+              </p>
             </div>
           )}
         </section>

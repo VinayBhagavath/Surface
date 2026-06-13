@@ -3,6 +3,8 @@
 // chrome (back link, action buttons) lives in the route and is `print:hidden`.
 
 import type { AcmgRow, ConfidenceLabel, RunOutput } from "@/lib/types";
+import { sequenceContextFromCard } from "@/lib/sequence";
+import { SequenceViewer } from "@/components/SequenceViewer";
 import { cn } from "@/lib/utils";
 
 const OVERALL: Record<ConfidenceLabel, { badge: string; dot: string; word: string }> = {
@@ -84,6 +86,7 @@ export function BriefDocument({ output }: { output: RunOutput }) {
   const gateValue = evidenceCard.pipeline.mechanismGate?.value;
   const overallReason = evidenceCard.pipeline.overall?.reason;
   const caveats = brief.acmgRows.filter((r) => r.caveat);
+  const sequence = sequenceContextFromCard(evidenceCard);
 
   return (
     <article className="rounded-2xl border bg-card p-8 text-foreground shadow-sm print:rounded-none print:border-0 print:p-0 print:shadow-none">
@@ -126,6 +129,18 @@ export function BriefDocument({ output }: { output: RunOutput }) {
         </h2>
         <p className="text-pretty mt-2 leading-relaxed">{brief.summary}</p>
       </section>
+
+      {/* sequence context — DNA-level view of the substitution */}
+      {sequence && (
+        <section className="mt-6">
+          <h2 className="font-mono text-[0.65rem] uppercase tracking-[0.18em] text-muted-foreground">
+            Sequence context
+          </h2>
+          <div className="mt-2">
+            <SequenceViewer ctx={sequence} />
+          </div>
+        </section>
+      )}
 
       {/* confidence breakdown */}
       <section className="mt-6">
