@@ -158,10 +158,18 @@ function QueuedItem({ label }: { label: string }) {
 
 type ChatMsg = { role: "user" | "assistant"; text: string };
 
-export function SessionView({ runId, demo }: { runId: string; demo: DemoId }) {
+export function SessionView({
+  runId,
+  demo,
+  live = false,
+}: {
+  runId: string;
+  demo: DemoId;
+  live?: boolean;
+}) {
   const meta = DEMO_BY_ID[demo];
   const { fragments, pipeline, narrations, complete } = useEvidenceRun(runId, {
-    source: "fixture",
+    source: live ? "live" : "fixture",
     fixture: DEMO_RUNS[demo],
     intervalMs: 700,
   });

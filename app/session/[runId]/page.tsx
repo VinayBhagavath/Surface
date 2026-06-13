@@ -14,6 +14,8 @@ export default async function SessionPage({
   const sp = await searchParams;
   const demoRaw = typeof sp.demo === "string" ? sp.demo : undefined;
   const demo = isDemoId(demoRaw) ? demoRaw : DEFAULT_DEMO;
+  // ?live=1 flips to the live Inngest Realtime subscription (Step 9). Default = fixture replay.
+  const live = sp.live === "1" || sp.live === "true";
 
-  return <SessionView runId={runId} demo={demo} />;
+  return <SessionView runId={runId} demo={demo} live={live} />;
 }

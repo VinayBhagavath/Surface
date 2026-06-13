@@ -4,14 +4,13 @@ _Read this first when resuming. Trust it over assumptions; if it conflicts with 
 investigate before proceeding._
 
 ## Current status
-Step 10 (Grok voice) complete and **verified** — browser Web Speech for TTS/STT (xAI has no
-speech models) + **Grok grok-3** for follow-up Q&A grounded in the run's evidence. Verified: a real
-Grok answer citing the actual evidence (AlphaMissense/REVEL/CADD/LOEUF/ClinVar), no hallucination;
-voice toggle + composer render (hydration mismatch fixed via `useSyncExternalStore`); strict text
-fallback. 9 of 10 steps done.
+**ALL 10 build steps implemented.** The full demo runs today in fixture mode (real captured Person A
+data): intake → live evidence trajectory + confidence pipeline (gate valve) → printable Doctor Brief
+→ watch dashboard, with optional Grok voice. Step 9 (live Realtime) is implemented **ready-to-flip**
+(`?live=1`) and degrades gracefully; the live STREAM is pending the joint integration.
 
-**Next / remaining: Step 9 — live Realtime wiring.** Implement ready-to-flip; NOT solo-verifiable
-(needs Person A's `backend` routes merged + the inngest v3/v4 decision + a joint test).
+**Remaining = joint integration (cross-team, not solo-verifiable on `yesh`)** — see the checklist
+under "Blocked on / awaiting Person A" below.
 
 Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typecheck` + `pnpm lint` clean.
 
@@ -48,13 +47,21 @@ Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typechec
       `useSyncExternalStore`); `app/actions/ask-followup.ts` (Grok grok-3, grounded Q&A, returns a
       result object — never throws). SessionView: voice toggle (auto-speak narrations) + mic/text
       follow-up composer + Q&A thread. Verified a real grounded Grok answer; strict text fallback.
+- [x] **Step 9** — live wiring (ready-to-flip). `subscribeToRun` in `useEvidenceRun`: fetch Person A's
+      `GET /api/realtime-token?runId=` → inngest@4 client `subscribe` on `runChannel(runId)` topic
+      "events" → map `message.data` → RealtimeEvent (dynamic-imported so fixture mode stays lean).
+      `/session?live=1` flips source to live; `/brief?live=1` fetches `GET /api/brief/:runId` (fixture
+      fallback). Default stays fixture. Verified solo: typecheck/lint clean; `?live` degrades gracefully
+      (token 404 → caught, shell renders "resolving", no crash, no fixture replay).
 
-## Next (immediate)
-Step 9 (live wiring) — implement `subscribeToRun` in `useEvidenceRun` consuming Person A's
-`GET /api/realtime-token` + `subscribe` (inngest/realtime v4); wire `/brief` to `GET /api/brief/:runId`.
-Keep `source:"fixture"` default + add a `?live` opt-in. CHECK current Inngest Realtime docs first.
-NOT solo-verifiable on `yesh` (those routes live on Person A's `backend`); needs the inngest v3/v4
-decision + a joint test. I'll implement ready-to-flip and document the joint checklist.
+## Joint integration checklist (cross-team — the only remaining work)
+1. **Decide inngest v3 vs v4** (see DECISIONS pending items). v4: Person A upgrades + publishes via
+   built-in `channel()/publish()`. v3: Person B pins v3, restores `realtimeMiddleware()` in client.ts,
+   and adapts `subscribeToRun` to the v3 subscribe API.
+2. Merge Person A's `backend` tree into `yesh` (connectors, pipeline, watcher, `/api/realtime-token`,
+   `/api/brief/[runId]`); take Person A's `lib/types.ts`; register their functions in `inngest/functions.ts`.
+3. `pnpm dev` + Inngest dev server → intake a real variant → confirm `/session?live=1` streams live
+   fragments and the gate behaves on `cacna1c`; confirm `/brief?live=1` reads the real RunOutput.
 
 ## Known issues / TODOs
 - **Tailwind v4 + Turbopack stale cache:** after adding new `@theme` tokens + their utilities,
@@ -83,4 +90,4 @@ decision + a joint test. I'll implement ready-to-flip and document the joint che
       `panel-to-hpo.json` labels). Send the `value` key as `clinicalContext`.
 
 ## Last commit
-Step 8 `3c5da46`. Step 10 committing now. Branch `yesh`. Run `git log --oneline -14`.
+Step 10 `6350565`. Step 9 committing now (final build step). Branch `yesh`. Run `git log --oneline -16`.
