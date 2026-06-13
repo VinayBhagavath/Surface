@@ -194,8 +194,72 @@
 .seg-in {
   animation: seg-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+
+/* ── Sequence decode intro animation ── */
+@keyframes dna-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+@keyframes dna-pop {
+  0% {
+    transform: translateY(10px) scale(0.82);
+    opacity: 0;
+  }
+  55% {
+    transform: translateY(-5px) scale(1.09);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+@keyframes vus-zoom-in {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.06);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes soft-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.animate-dna-bob {
+  animation: dna-bob 2.6s ease-in-out infinite;
+}
+.animate-dna-pop {
+  animation: dna-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-vus-zoom-in {
+  animation: vus-zoom-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-soft-pulse {
+  animation: soft-pulse 1.8s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .seg-in {
+  .seg-in,
+  .animate-dna-bob,
+  .animate-dna-pop,
+  .animate-vus-zoom-in,
+  .animate-soft-pulse {
     animation: none;
   }
 }

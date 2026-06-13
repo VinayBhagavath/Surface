@@ -14,7 +14,6 @@ import { startRun } from "@/app/actions/start-run";
 import { annotateVariants, type AnnotatedVariant } from "@/app/actions/annotate-vcf";
 import { parseVcf } from "@/lib/vcf";
 import { CLINICAL_CONTEXT_OPTIONS } from "@/lib/clinical-context-options";
-import { DEMOS, type DemoId } from "@/fixtures/runs";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -142,11 +141,6 @@ export default function IntakePage() {
     router.push(`/session/${runId}?${q.toString()}`);
   }
 
-  function openDemo(d: DemoId) {
-    const runId = crypto.randomUUID();
-    router.push(`/session/${runId}?demo=${d}`);
-  }
-
   const busy = phase === "reading" || phase === "annotating";
 
   return (
@@ -232,35 +226,6 @@ export default function IntakePage() {
                 </div>
               </div>
             )}
-
-            <div className="space-y-2 text-center">
-              <div className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                Or see a finished example
-              </div>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {DEMOS.map((d) => (
-                  <button
-                    key={d.id}
-                    type="button"
-                    onClick={() => openDemo(d.id)}
-                    className="group flex flex-col gap-1 rounded-xl border bg-card p-3 text-left transition-colors hover:border-foreground/20 hover:bg-accent"
-                  >
-                    <span className="flex items-center gap-2">
-                      <span
-                        className={cn(
-                          "size-2 rounded-full",
-                          d.tone === "high" && "bg-confidence-high",
-                          d.tone === "low" && "bg-confidence-low",
-                          d.tone === "pending" && "bg-confidence-pending",
-                        )}
-                      />
-                      <span className="font-mono text-sm font-semibold text-foreground">{d.gene}</span>
-                    </span>
-                    <span className="text-[0.7rem] leading-snug text-muted-foreground">{d.scenario}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
           </>
         )}
 

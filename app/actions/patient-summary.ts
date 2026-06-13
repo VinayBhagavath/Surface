@@ -1,82 +1,59 @@
 // Server Action: produce the final patient-facing summary with Grok, grounded
-// in the run's real output. Returns a structured result (never throws) and
-// always degrades gracefully to the deterministic builder when the XAI key is
-// missing or the API errors — so the summary ALWAYS renders.
+// strictly in the LIVE run's real stored output. No demo data, no deterministic
+// fallback — if the run output isn't available or Grok fails, this throws and
+// the UI shows an honest error/retry. Literature grounding is a real Europe PMC
+// query.
 
 "use server";
 
-import { hasXai } from "@/lib/env";
 import { getOutput } from "@/lib/store";
 import { patientSummary as grokPatientSummary } from "@/lib/grok/patient-summary";
 import {
-  buildPatientSummary,
   plainContextLabel,
   type PatientSummary,
   type SummaryReference,
 } from "@/lib/patient-summary";
 import { searchLiterature, type LiteraturePaper } from "@/lib/connectors/literature";
-import { DEMO_OUTPUTS, isDemoId, DEFAULT_DEMO } from "@/fixtures/runs";
 import type { RunOutput } from "@/lib/types";
 
-async function resolveOutput(runId?: string, demo?: string): Promise<RunOutput> {
-  if (runId) {
-    try {
-      const live = await getOutput(runId);
-      if (live) return live;
-    } catch {
-      /* fall through to fixture */
-    }
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Read the live run output, with a short retry to cover the tiny race between
+ *  the realtime `complete` event and the stored output being readable. */
+async function loadOutput(runId: string): Promise<RunOutput> {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const out = await getOutput(runId);
+    if (out) return out;
+    await sleep(500 * (attempt + 1));
   }
-  const id = isDemoId(demo) ? demo : DEFAULT_DEMO;
-  return DEMO_OUTPUTS[id];
+  throw new Error(`No stored output for run ${runId} yet.`);
 }
 
 function toReferences(papers: LiteraturePaper[]): SummaryReference[] {
-  return papers.map((p) => ({
-    title: p.title,
-    journal: p.journal,
-    year: p.year,
-    url: p.url,
-  }));
+  return papers.map((p) => ({ title: p.title, journal: p.journal, year: p.year, url: p.url }));
 }
 
-export async function summarizeForPatient(input: {
-  runId?: string;
-  demo?: string;
-}): Promise<PatientSummary> {
-  const output = await resolveOutput(input.runId, input.demo);
-  const fallback = buildPatientSummary(output); // deterministic, always valid
+export async function summarizeForPatient(input: { runId: string }): Promise<PatientSummary> {
+  const output = await loadOutput(input.runId);
 
-  // Real literature pass (Europe PMC). Best-effort: never block the summary.
-  let papers: LiteraturePaper[] = [];
-  try {
-    const lit = await searchLiterature({
-      geneSymbol: output.evidenceCard.geneSymbol,
-      condition: plainContextLabel(output.evidenceCard.clinicalContext),
-      limit: 4,
-    });
-    papers = lit.papers;
-  } catch {
-    papers = [];
-  }
-  const references = toReferences(papers);
+  // Real scholarly-literature pass (Europe PMC) for grounding + display.
+  const lit = await searchLiterature({
+    geneSymbol: output.evidenceCard.geneSymbol,
+    condition: plainContextLabel(output.evidenceCard.clinicalContext),
+    limit: 4,
+  });
 
-  if (!hasXai()) return { ...fallback, references };
-
-  try {
-    const g = await grokPatientSummary(output, papers);
-    return {
-      confidence: output.doctorBrief.overall,
-      verdict: g.verdict,
-      headline: g.headline,
-      body: g.body,
-      mouseLine: g.mouseLine,
-      therapyNote: g.therapyNote,
-      nextStep: g.nextStep,
-      references,
-      source: "grok",
-    };
-  } catch {
-    return { ...fallback, references };
-  }
+  // Grok writes the plain-language summary, grounded in the run + the papers.
+  const g = await grokPatientSummary(output, lit.papers);
+  return {
+    confidence: output.doctorBrief.overall,
+    verdict: g.verdict,
+    headline: g.headline,
+    body: g.body,
+    mouseLine: g.mouseLine,
+    therapyNote: g.therapyNote,
+    nextStep: g.nextStep,
+    references: toReferences(lit.papers),
+    source: "grok",
+  };
 }

@@ -1,32 +1,41 @@
 "use client";
 
-// The investigation, in one calm vertical flow:
-//   1. the DNA change we found (SequenceViewer)
-//   2. a short, high-level animated trace of what the agent is doing
-//   3. a plain-language summary a patient can actually read
+// The investigation — fully LIVE, one calm vertical flow:
+//   0. an intro "decode" animation over the real sequence (between upload & result)
+//   1. the DNA change we found (SequenceViewer, from the live VEP fragment)
+//   2. a short, high-level animated trace of what the agent is doing (live events)
+//   3. a plain-language summary written by Grok from the run's real output
 //   4. an optional follow-up Q&A (Grok, grounded in this run; voice optional)
 //
-// Two modes from the SAME components:
-//   • live  (real upload)  → data comes from the live Inngest Realtime stream and
-//     the run's real stored output; the DNA view is built from the live VEP
-//     fragment and the summary from the saved RunOutput.
-//   • demo  (worked example) → the trace replays a real captured run and the DNA
-//     view / summary come from that run's captured output.
+// Everything is driven by the live Inngest Realtime stream for `runId` and the
+// run's real stored output. No fixtures, no demo replay, no deterministic
+// fallbacks — if the model/output isn't available, the UI says so honestly.
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, BookOpen, Check, Eye, Loader2, Mic, Send, Volume2, VolumeX } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BookOpen,
+  Check,
+  Eye,
+  Loader2,
+  Mic,
+  RotateCw,
+  Send,
+  Volume2,
+  VolumeX,
+} from "lucide-react";
 
 import { useEvidenceRun } from "@/lib/useEvidenceRun";
-import { DEMO_OUTPUTS, DEMO_RUNS, type DemoId } from "@/fixtures/runs";
-import { sequenceContextFromCard, parseSequenceContext } from "@/lib/sequence";
-import { buildPatientSummary, type PatientSummary } from "@/lib/patient-summary";
+import { parseSequenceContext } from "@/lib/sequence";
+import { type PatientSummary } from "@/lib/patient-summary";
 import { summarizeForPatient } from "@/app/actions/patient-summary";
 import { askFollowup, type FollowupContext } from "@/app/actions/ask-followup";
 import { useSpeech } from "@/lib/voice/useSpeech";
 import { TRACE_STAGES, stageStatuses, type StageStatus } from "@/lib/agent-trace";
 import { SequenceViewer } from "@/components/SequenceViewer";
-import { Input } from "@/components/ui/input";
+import { SequenceDecodeAnimation } from "@/components/SequenceDecodeAnimation";
 import type { ConfidenceLabel } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -69,79 +78,67 @@ function StageRow({ stage, status }: { stage: (typeof TRACE_STAGES)[number]; sta
   );
 }
 
-function minimalSummary(label: ConfidenceLabel): PatientSummary {
-  return {
-    confidence: label,
-    verdict: label === "high" ? "Likely important" : label === "moderate" ? "Possibly important" : "Still unclear",
-    headline: "We finished the investigation, but couldn't write the plain-language summary just now.",
-    body: ["You can open the detailed brief to see the full evidence behind this result."],
-    mouseLine: null,
-    therapyNote: "Discuss this result with your care team before any treatment decision is made.",
-    nextStep: "Bring the detailed brief to your doctor or genetic counselor.",
-    references: [],
-    source: "fallback",
-  };
-}
-
 export function SessionView({
   runId,
-  demo,
-  live = false,
   variant,
   clinicalContext,
   gene,
 }: {
   runId: string;
-  demo: DemoId;
-  live?: boolean;
   variant?: string;
   clinicalContext?: string;
   gene?: string;
 }) {
-  const demoOutput = live ? null : DEMO_OUTPUTS[demo];
-
-  const { fragments, pipeline, complete } = useEvidenceRun(runId, {
-    source: live ? "live" : "fixture",
-    fixture: DEMO_RUNS[demo],
-    intervalMs: 850,
-  });
+  const { fragments, pipeline, complete } = useEvidenceRun(runId, { source: "live" });
 
   const statuses = stageStatuses({ fragments, pipeline, complete });
 
-  // DNA view: live → from the live VEP fragment; demo → from the captured card.
+  // DNA view: parsed from the live Ensembl VEP fragment as it streams in.
   const liveVep = fragments.find((f) => f.source === "ensembl_vep");
-  const seqCtx = React.useMemo(() => {
-    if (live) return liveVep ? parseSequenceContext(liveVep, gene ?? variant ?? "") : null;
-    return demoOutput ? sequenceContextFromCard(demoOutput.evidenceCard) : null;
-  }, [live, liveVep, demoOutput, gene, variant]);
+  const seqCtx = React.useMemo(
+    () => (liveVep ? parseSequenceContext(liveVep, gene ?? variant ?? "") : null),
+    [liveVep, gene, variant],
+  );
 
-  const displayGene = seqCtx?.gene ?? gene ?? demoOutput?.evidenceCard.geneSymbol ?? "";
-  const displayVariant = variant ?? demoOutput?.evidenceCard.variant ?? "";
+  const displayGene = seqCtx?.gene ?? gene ?? "";
+  const displayVariant = variant ?? "";
 
-  // Patient summary: written by Grok on completion (grounded in the real run
-  // output), with a deterministic fallback so it always renders.
+  // Intro "decode" animation: plays once, as soon as we can draw the real change.
+  const [introDone, setIntroDone] = React.useState(false);
+  const onIntroDone = React.useCallback(() => setIntroDone(true), []);
+  const showIntro = Boolean(seqCtx) && !introDone && !complete;
+
+  // Patient summary: written LIVE by Grok on completion. No fake fallback —
+  // failure surfaces an honest retry.
   const [summary, setSummary] = React.useState<PatientSummary | null>(null);
+  const [summaryError, setSummaryError] = React.useState(false);
   const [writing, setWriting] = React.useState(false);
+  const summaryAttempt = React.useRef(0);
+
+  const writeSummary = React.useCallback(() => {
+    summaryAttempt.current += 1;
+    setSummaryError(false);
+    setWriting(true);
+    summarizeForPatient({ runId })
+      .then((s) => setSummary(s))
+      .catch(() => setSummaryError(true))
+      .finally(() => setWriting(false));
+  }, [runId]);
+
   const requestedRef = React.useRef(false);
   React.useEffect(() => {
     if (!complete || requestedRef.current) return;
     requestedRef.current = true;
-    setWriting(true);
-    summarizeForPatient(live ? { runId } : { runId, demo })
-      .then((s) => setSummary(s))
-      .catch(() => {
-        if (!live && demoOutput) setSummary(buildPatientSummary(demoOutput));
-        else setSummary(minimalSummary(pipeline.overall?.label ?? "low"));
-      })
-      .finally(() => setWriting(false));
-  }, [complete, runId, demo, demoOutput, live, pipeline.overall?.label]);
+    writeSummary();
+  }, [complete, writeSummary]);
 
-  const briefParams = new URLSearchParams({ demo });
-  if (live) briefParams.set("live", "1");
-  if (variant) briefParams.set("variant", variant);
-  if (clinicalContext) briefParams.set("context", clinicalContext);
-  if (gene) briefParams.set("gene", gene);
-  const briefHref = `/brief/${runId}?${briefParams.toString()}`;
+  const briefHref = (() => {
+    const p = new URLSearchParams({ live: "1" });
+    if (variant) p.set("variant", variant);
+    if (clinicalContext) p.set("context", clinicalContext);
+    if (gene) p.set("gene", gene);
+    return `/brief/${runId}?${p.toString()}`;
+  })();
 
   // ── follow-up Q&A (optional, grounded in this run) ─────────────────────────
   const { ttsSupported, sttSupported, listening, speak, cancelSpeech, listen, stopListening } = useSpeech();
@@ -156,14 +153,14 @@ export function SessionView({
     return {
       geneSymbol: displayGene || "this gene",
       variant: displayVariant,
-      clinicalContext: clinicalContext ?? demoOutput?.evidenceCard.clinicalContext ?? "",
+      clinicalContext: clinicalContext ?? "",
       overall: pipeline.overall?.label ?? summary?.confidence ?? null,
       pipelineSummary: `gene-prior ${lbl(pipeline.genePrior)}, variant-effect ${lbl(
         pipeline.variantEffect,
       )}, mechanism-gate ×${g ? g.value.toFixed(2) : "?"}, cross-species ${lbl(pipeline.crossSpecies)}`,
       evidence: fragments.map((f) => f.summary),
     };
-  }, [pipeline, displayGene, displayVariant, clinicalContext, demoOutput, summary, fragments]);
+  }, [pipeline, displayGene, displayVariant, clinicalContext, summary, fragments]);
 
   const ask = React.useCallback(
     (question: string) => {
@@ -201,6 +198,8 @@ export function SessionView({
 
   return (
     <main className="min-h-screen bg-background">
+      {showIntro && seqCtx && <SequenceDecodeAnimation ctx={seqCtx} onDone={onIntroDone} />}
+
       <header className="sticky top-0 z-10 flex items-center gap-3 border-b bg-card/80 px-4 py-2.5 backdrop-blur sm:px-6">
         <Link
           href="/"
@@ -234,7 +233,7 @@ export function SessionView({
           <h2 className="font-serif text-xl font-semibold text-foreground">The change we found in your DNA</h2>
           {seqCtx ? (
             <SequenceViewer ctx={seqCtx} />
-          ) : live && !complete ? (
+          ) : !complete ? (
             <div className="flex items-center gap-3 rounded-xl border border-dashed bg-card/50 p-4 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" /> Reading the DNA change in your file…
             </div>
@@ -245,7 +244,7 @@ export function SessionView({
           )}
         </section>
 
-        {/* 2 — what the agent is doing */}
+        {/* 2 — what the agent is doing (high level, live) */}
         <section className="space-y-3">
           <h2 className="font-serif text-xl font-semibold text-foreground">What the agent is doing</h2>
           <ul className="rounded-xl border bg-card px-4 py-2 sm:px-5">
@@ -255,13 +254,32 @@ export function SessionView({
           </ul>
         </section>
 
-        {/* 3 — plain-language summary */}
+        {/* 3 — plain-language summary (written live by Grok) */}
         <section className="space-y-3">
           <h2 className="font-serif text-xl font-semibold text-foreground">What this means</h2>
           {!complete ? (
             <div className="flex items-center gap-3 rounded-xl border border-dashed bg-card/50 p-5 text-sm text-muted-foreground">
               <Loader2 className="size-4 animate-spin" />
               Gathering the evidence — your plain-language summary will appear here.
+            </div>
+          ) : summaryError ? (
+            <div className="space-y-3 rounded-xl border border-destructive/30 bg-destructive/5 p-5 text-sm">
+              <p className="text-destructive">
+                We couldn&rsquo;t generate your plain-language summary just now. The full evidence is
+                still available in the detailed brief.
+              </p>
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={writeSummary}
+                  disabled={writing}
+                  className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-accent disabled:opacity-60"
+                >
+                  <RotateCw className={cn("size-3.5", writing && "animate-spin")} /> Try again
+                </button>
+                <Link href={briefHref} className="text-xs text-primary hover:underline">
+                  Open the detailed brief
+                </Link>
+              </div>
             </div>
           ) : !summary || writing ? (
             <div className="flex items-center gap-3 rounded-xl border border-dashed bg-card/50 p-5 text-sm text-muted-foreground">
@@ -292,6 +310,7 @@ export function SessionView({
                 )}
               </div>
 
+              {/* the CRISPR / gene-therapy one-liner */}
               <div className="rounded-lg border-l-[3px] border-primary bg-primary/5 p-3.5">
                 <p className="text-pretty text-sm leading-relaxed text-foreground/90">
                   <span className="font-medium">For your treatment plan: </span>
@@ -322,13 +341,12 @@ export function SessionView({
               </div>
 
               <p className="pt-1 font-mono text-[0.6rem] uppercase tracking-wider text-muted-foreground/70">
-                {summary.source === "grok"
-                  ? "Summary written by Grok, grounded in this run's evidence"
-                  : "Summary generated from this run's evidence"}
+                Summary written by Grok, grounded in this run&rsquo;s evidence
               </p>
             </div>
           )}
 
+          {/* real research papers this is grounded in (Europe PMC) */}
           {complete && summary && summary.references.length > 0 && (
             <div className="rounded-xl border bg-card/60 p-4">
               <div className="mb-2 flex items-center gap-2 text-sm font-medium text-foreground">
@@ -406,11 +424,11 @@ export function SessionView({
               }}
               className="flex items-center gap-2"
             >
-              <Input
+              <input
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder="e.g. Does this mean I'll definitely get sick?"
-                className="flex-1"
+                className="flex-1 rounded-lg border bg-card px-3 py-2 text-sm outline-none ring-primary/30 focus:ring-2"
               />
               {sttSupported && (
                 <button

@@ -144,10 +144,15 @@ The full demo verification is:
 - Live Search (`web_search`) is scoped to ONLY genes absent from the curated
   mechanism table, is cited + labeled, and is additive: `XAI_WEB_SEARCH=0` or an
   empty/failed search must still leave a working run (the gate stays cautious).
-- Every Grok reasoning call has a deterministic, schema-valid fallback
-  (`lib/grok/fallbacks.ts`); a failure degrades the brief honestly (the mechanism
-  gate fails to a conservative 0.5, never 1.0) rather than crashing the run.
-- Intake is upload-first: `app/page.tsx` parses a VCF in the browser
-  (`lib/vcf.ts`), annotates every variant via VEP (`app/actions/annotate-vcf.ts`
-  — only parsed coordinates leave the browser, nothing is stored), and the user
-  picks one to run live. The 3 sample demos remain fixture replays.
+- NO deterministic/local fallbacks and NO demo reliability. Every Grok reasoning
+  call is live; transient failures are absorbed by the Inngest step retries, and a
+  persistent failure fails the run honestly rather than substituting deterministic
+  output. (The old `lib/grok/fallbacks.ts` and the captured demo fixtures were
+  removed.) Reference *tables* (ACMG criteria, the curated ClinGen/OMIM
+  gene-mechanism table, HPO maps) are scientific constants, not fallbacks — and
+  out-of-table genes are researched live via Grok Live Search.
+- Intake is upload-only and fully live: `app/page.tsx` parses a VCF in the browser
+  (`lib/vcf.ts`), annotates every variant via live VEP (`app/actions/annotate-vcf.ts`
+  — only parsed coordinates leave the browser, nothing is stored), the user picks
+  one, and `/session/[runId]` streams the real Inngest Realtime run (DNA decode
+  intro animation → live agent trace → Grok-written summary). No fixtures.

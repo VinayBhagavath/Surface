@@ -5,7 +5,6 @@ import { ArrowLeft } from "lucide-react";
 
 import type { RunOutput } from "@/lib/types";
 import { getOutput } from "@/lib/store";
-import { DEMO_OUTPUTS, DEFAULT_DEMO, isDemoId } from "@/fixtures/runs";
 import { BriefDocument } from "@/components/BriefDocument";
 import { BriefActions } from "@/components/BriefActions";
 
@@ -20,17 +19,15 @@ export default async function BriefPage({
 }) {
   const { runId } = await params;
   const sp = await searchParams;
-  const demoRaw = typeof sp.demo === "string" ? sp.demo : undefined;
-  const demo = isDemoId(demoRaw) ? demoRaw : DEFAULT_DEMO;
-  const live = sp.live === "1" || sp.live === "true";
   const variant = typeof sp.variant === "string" ? sp.variant : undefined;
   const clinicalContext = typeof sp.context === "string" ? sp.context : undefined;
+  const gene = typeof sp.gene === "string" ? sp.gene : undefined;
 
-  const output: RunOutput | null = live ? await getOutput(runId) : DEMO_OUTPUTS[demo];
-  const backParams = new URLSearchParams({ demo });
-  if (live) backParams.set("live", "1");
+  const output: RunOutput | null = await getOutput(runId);
+  const backParams = new URLSearchParams({ live: "1" });
   if (variant) backParams.set("variant", variant);
   if (clinicalContext) backParams.set("context", clinicalContext);
+  if (gene) backParams.set("gene", gene);
 
   return (
     <main className="surface-grid min-h-screen px-4 py-6 print:bg-white print:p-0">
