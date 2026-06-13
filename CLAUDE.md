@@ -22,8 +22,8 @@ talks to.** Person A owns the research engine — every part that doesn't render
 Next.js 16 (App Router, TS strict, no `/src`), React 19, Tailwind **v4** (CSS-first
 `@theme` in `app/globals.css` — there is NO `tailwind.config`), shadcn/ui (radix base,
 `radix-nova` style), Inngest + Inngest Realtime, Vercel AI SDK **v6** + `@ai-sdk/xai`
-(Grok), lucide-react, sonner. Package manager **pnpm**. shadcn CLI: use `shadcn@4.10.0`
-(4.11.0 `init` is broken).
+(Grok), lucide-react, sonner, Newsreader serif (headings). Package manager **pnpm**.
+shadcn CLI: use `shadcn@4.10.0` (4.11.0 `init` is broken).
 
 ## Git workflow — IMPORTANT
 All work on branch **`yesh`** (tracks `origin/yesh`, remote = VinayBhagavath/Surface, the

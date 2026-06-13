@@ -53,6 +53,17 @@ Terse log of non-obvious choices so a future session doesn't re-litigate settled
   endpoint without a signing key; the `dev` script is `INNGEST_DEV=1 next dev` so `/api/inngest`
   serves introspection locally (verified: `mode:"dev"`, HTTP 200).
 
+- **Visual system: "clinical instrument × medical journal."** Light mode, cool-slate paper
+  with a steel-teal accent; Newsreader serif for headings (journal authority) + Geist Sans
+  (UI) + Geist Mono (data/IDs/scores). Confidence tokens are the single source of truth in
+  `app/globals.css`. The **Mechanism Gate is a sluice valve**: a gate plate descends to choke
+  an animated evidence-flow channel (handwheel on top), and a low gate desaturates + fades the
+  downstream Cross-Species segment. Verified visually (gate-open vs gate-closed obvious).
+- **Tailwind v4 + Turbopack stale-cache gotcha.** Adding NEW `@theme` tokens together with the
+  utility classes that consume them can leave Turbopack serving a stale CSS chunk (the new
+  utilities resolve to transparent — confirmed `--confidence-*` missing from compiled CSS).
+  Fix: `rm -rf .next` + restart `pnpm dev`. Captured in `components/CLAUDE.md`.
+
 ## Pending cross-team items (see PROGRESS.md "Blocked on / awaiting Person A")
 - **inngest major version (v3 vs v4)** — Person B is on v4 with built-in Realtime (no
   middleware). Person A must confirm they're also on v4 and publish via the built-in API, or we
