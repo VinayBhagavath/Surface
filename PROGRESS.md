@@ -9,8 +9,10 @@ data): intake → live evidence trajectory + confidence pipeline (gate valve) �
 → watch dashboard, with optional Grok voice. Step 9 (live Realtime) is implemented **ready-to-flip**
 (`?live=1`) and degrades gracefully; the live STREAM is pending the joint integration.
 
-**Remaining = joint integration (cross-team, not solo-verifiable on `yesh`)** — see the checklist
-under "Blocked on / awaiting Person A" below.
+Production build passes (`pnpm build`, 0 errors); `pnpm typecheck` + `pnpm lint` clean across all steps.
+
+**Remaining = joint integration (cross-team, not solo-verifiable on `yesh`)** — see the
+"Joint integration checklist" below.
 
 Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typecheck` + `pnpm lint` clean.
 
@@ -90,4 +92,5 @@ Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typechec
       `panel-to-hpo.json` labels). Send the `value` key as `clinicalContext`.
 
 ## Last commit
-Step 10 `6350565`. Step 9 committing now (final build step). Branch `yesh`. Run `git log --oneline -16`.
+`7bedcb2` (Step 9 — final build step). All 10 steps done; production build passes. Branch `yesh`.
+Run `git log --oneline -16`.
