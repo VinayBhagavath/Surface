@@ -41,8 +41,20 @@ Terse log of non-obvious choices so a future session doesn't re-litigate settled
   breaking `init`. None of these native builds are needed at dev time, so they're set to not
   build, which resolves the error.
 
+- **Inngest v4 with built-in Realtime — no `realtimeMiddleware` (CROSS-TEAM).** `pnpm add inngest`
+  installs inngest@4.5.1, which bundles Realtime (`inngest/realtime`) and exports no
+  `realtimeMiddleware`; the standalone `@inngest/realtime@0.4.7` targets inngest **v3** and its
+  middleware is type-incompatible with v4 (`middleware: Middleware.Class[]`). So
+  `inngest/client.ts` is `new Inngest({ id })` with NO middleware — a deliberate deviation from
+  the spec's v3 pattern. Person A must agree on the inngest major version and publish via v4's
+  built-in `channel()/publish()`. Person B's Step 9 subscribe uses built-in `inngest/realtime`
+  (`getSubscriptionToken`/`subscribe`).
+- **Local dev needs Inngest dev mode.** inngest@4 defaults to *cloud mode* and 500s the serve
+  endpoint without a signing key; the `dev` script is `INNGEST_DEV=1 next dev` so `/api/inngest`
+  serves introspection locally (verified: `mode:"dev"`, HTTP 200).
+
 ## Pending cross-team items (see PROGRESS.md "Blocked on / awaiting Person A")
-- `@inngest/realtime` is deprecated (Realtime folded into `inngest`); the shared
-  `inngest/client.ts` may need a `// CROSS-TEAM:` deviation from the spec's import — confirm
-  the current API and align with Person A at Step 1.
+- **inngest major version (v3 vs v4)** — Person B is on v4 with built-in Realtime (no
+  middleware). Person A must confirm they're also on v4 and publish via the built-in API, or we
+  pin v3 together and restore the spec's `realtimeMiddleware`.
 - `DoctorBrief` shape to be proposed to and frozen with Person A before Step 7.
