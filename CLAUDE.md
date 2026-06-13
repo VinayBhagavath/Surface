@@ -5,9 +5,11 @@ Guidance for future agents or humans working in this merged repo.
 ## What This Is
 
 VUS Resolver turns a genetic variant of uncertain significance into a live,
-confidence-scored evidence review. A user enters an rsID/HGVS string or uploads a
-VCF, chooses the clinical context, and watches an Inngest pipeline gather real
-human and cross-species evidence before producing a Doctor Brief.
+confidence-scored evidence review. A user uploads a VCF; every variant is
+annotated to its gene + consequence (Ensembl VEP) and the user picks one to
+investigate; an Inngest pipeline then gathers real human and cross-species
+evidence, gates it by mechanism, and produces a plain-language summary + Doctor
+Brief.
 
 The merged app includes both halves of the hackathon project:
 
@@ -27,8 +29,12 @@ the live pipeline.
 - Next.js 16 App Router, React 19, TypeScript strict.
 - Tailwind v4 and shadcn/radix UI.
 - Inngest v3 with `@inngest/realtime` middleware.
-- Grok/xAI via `openai` for backend reasoning and AI SDK `@ai-sdk/xai` for
-  optional follow-up Q&A.
+- Grok/xAI through ONE client: the `openai` SDK pointed at `api.x.ai/v1`
+  (`lib/grok/client.ts`). The chat path runs the lighter calls; the Responses
+  API runs reasoning mode (mechanism gate + synthesis) and Live Search
+  (`web_search`) for out-of-table gene mechanism. One model only: `grok-4.3`
+  via `XAI_MODEL`. (The old `@ai-sdk/xai` / `grok-3` follow-up path was removed —
+  follow-up Q&A uses the same client.)
 - pnpm is the package manager. Keep one lockfile: `pnpm-lock.yaml`.
 
 The Inngest version decision is resolved: use `inngest@^3.54.2` with
@@ -84,8 +90,9 @@ dev server introspects `/api/inngest`.
 
 Required env:
 
-- `XAI_API_KEY` for Grok reasoning and follow-up Q&A.
-- Optional `XAI_BASE_URL`, `XAI_MODEL`.
+- `XAI_API_KEY` for Grok reasoning, Live Search, and follow-up Q&A.
+- Optional `XAI_BASE_URL`, `XAI_MODEL` (defaults `grok-4.3`), and
+  `XAI_WEB_SEARCH` (set `0` to disable Live Search; on by default).
 - Optional `KV_REST_API_URL`/`KV_REST_API_TOKEN` or Upstash equivalents for a
   durable store. Without KV, `next dev` uses an in-memory store.
 
@@ -105,11 +112,15 @@ pnpm capture kcnq1
 The full demo verification is:
 
 1. Run `pnpm dev` and `pnpm inngest`.
-2. Submit LDLR (`rs879254403`, `hypercholesterolemia`) from `/`.
-3. Confirm live fragments, pipeline updates, completion, Doctor Brief, and Watch
-   registration.
-4. Submit CACNA1C (`rs776805699`, `arrhythmia`) and confirm the Mechanism Gate
-   closes and suppresses cross-species evidence.
+2. Upload `public/samples/patient_PT001_raw.vcf` from `/`; confirm all 12
+   variants annotate to their genes, then pick TP53 and confirm the Mechanism
+   Gate CLOSES (GoF) and suppresses the mouse lethality signal. Pick MSH6/ATM and
+   confirm the gate OPENS (LoF). (BRCA1/MLH1 in this file are already classified
+   in ClinVar, so they correctly early-exit — they are not VUS.)
+3. Confirm live fragments, pipeline updates, completion, the plain-language
+   summary, Doctor Brief, and Watch registration.
+4. Or use the "see a finished example" demos (LDLR gate-open/HIGH, CACNA1C
+   gate-closes, KCNQ1 low) — these replay captured runs.
 5. Confirm voice off leaves the app fully usable, and follow-up Q&A is grounded
    in the visible evidence when `XAI_API_KEY` is available.
 
@@ -125,3 +136,18 @@ The full demo verification is:
 - Keep `/dev/pipeline` and `/dev/run` until the final cleanup pass.
 - Keep Grok prompts narrow and grounded. Do not add a mega-prompt or let Grok
   override the deterministic confidence label.
+- One xAI client/config/model only (`lib/grok/client.ts` + `getXaiConfig`,
+  `grok-4.3`). Reasoning is Responses-API only (effort `medium` for the gate,
+  `low` for synthesis); reasoning calls must not send presence/frequency_penalty
+  or stop. The schema-validated wrapper contract is identical regardless of which
+  transport (chat vs responses) ran — callers don't change.
+- Live Search (`web_search`) is scoped to ONLY genes absent from the curated
+  mechanism table, is cited + labeled, and is additive: `XAI_WEB_SEARCH=0` or an
+  empty/failed search must still leave a working run (the gate stays cautious).
+- Every Grok reasoning call has a deterministic, schema-valid fallback
+  (`lib/grok/fallbacks.ts`); a failure degrades the brief honestly (the mechanism
+  gate fails to a conservative 0.5, never 1.0) rather than crashing the run.
+- Intake is upload-first: `app/page.tsx` parses a VCF in the browser
+  (`lib/vcf.ts`), annotates every variant via VEP (`app/actions/annotate-vcf.ts`
+  — only parsed coordinates leave the browser, nothing is stored), and the user
+  picks one to run live. The 3 sample demos remain fixture replays.

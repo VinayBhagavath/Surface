@@ -202,7 +202,47 @@ Phase 4 (end-to-end live test on the real VCF) — DONE.
     (never 1.0), "AI reasoning unavailable" notes, no fabricated ACMG, no crash.
   - Follow-up Q&A via the unified grok-4.3 client: grounded + honest; voice optional.
 
+Phase 5 (re-sync + integrate + push) — DONE.
+- Merged the latest `origin/main` (only a no-op "trigger deploy" chore had
+  landed) into the branch cleanly — no conflicts, no conflict markers.
+- Re-ran the gate after sync: `pnpm build`, `pnpm typecheck`, `pnpm lint`, and 18
+  unit tests all green; routes 200.
+- Updated `CLAUDE.md`, `docs/DECISIONS.md`, and this file coherently; fast-
+  forwarded `main` to the verified branch tip and pushed `origin/main`.
+
+### Final report — grok-reasoning-upload
+
+What changed:
+- One xAI client/config/model (`grok-4.3` via `XAI_MODEL`); dropped
+  `@ai-sdk/xai` + `grok-3`; follow-up Q&A unified onto the backend client.
+- Reasoning mode (Responses API) on the mechanism gate (`effort: medium`) and
+  synthesis (`effort: low`); predictor + cross-species stay on the chat path.
+- xAI Live Search for out-of-table gene mechanism only (cited, labeled,
+  additive; `XAI_WEB_SEARCH` toggle).
+- Honest degradation for every Grok call (gate fails to 0.5, never 1.0).
+- Real upload → multi-variant VEP annotation → selection → live pipeline; raw
+  file stays in the browser, nothing stored. Gene-mechanism table extended;
+  TP53 → GoF.
+
+Final model + effort: `grok-4.3`; gate `medium`, synthesis `low`, follow-up /
+narration / predictor / cross-species on the chat path (default light reasoning).
+Web Search scope: out-of-table gene mechanism research only.
+
+Per-variant live results (patient_PT001_raw.vcf): TP53 R175 gate **0.10**
+(closes, mouse suppressed); MSH6 gate **0.90** (open, PVS1); ATM gate **0.90**
+(open); BRCA1/MLH1 early-exit (already classified — not VUS). Forced Grok failure
+→ rendered brief, gate 0.5, honest notes, no crash. Follow-up Q&A grounded.
+
+Deferred / honest deviations:
+- No variant in the demo VCF produced a PS3 model-organism ACMG row (cross-species
+  was low or gate-suppressed for all VUS) — PS3 only fires with real support.
+- The full browser-driven live run (upload → live session stream → brief) was
+  verified at the level of routes 200, the real upload UI, and the real
+  `runEvidencePipeline` against live APIs/Grok; the Inngest Realtime streaming
+  path itself is unchanged from the previously-verified integration.
+- `docs/GROK-AUDIT.md` (from the prior read-only audit) is left untracked; it
+  predates these changes.
+
 ## Last Commit
 
-Integration merge commit on `main`; see `git log -1 --oneline` for the final
-hash after push.
+See `git log -1 --oneline` on `main` after the push.
