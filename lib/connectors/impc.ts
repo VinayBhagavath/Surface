@@ -112,9 +112,6 @@ export async function impc(input: {
   }
 
   for (const d of phenotypes) {
-    const top = Array.isArray(d.top_level_mp_term_name)
-      ? d.top_level_mp_term_name.join(", ")
-      : d.top_level_mp_term_name ?? "";
     fragments.push({
       id: sanitizeId(d.mp_term_id as string),
       source: "impc",

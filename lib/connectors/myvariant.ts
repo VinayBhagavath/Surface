@@ -36,17 +36,25 @@ export type MyVariantParsed = {
   perResidue: { gerp: number | null; phyloP: number | null };
 };
 
-type Hit = Record<string, any>;
+type Hit = Record<string, unknown>;
 
-function normSigList(clinvar: any): string[] {
-  if (!clinvar) return [];
-  const rcv = asArray(clinvar.rcv);
+function asRecord(v: unknown): Record<string, unknown> {
+  return v !== null && typeof v === "object" ? (v as Record<string, unknown>) : {};
+}
+
+function normSigList(clinvar: unknown): string[] {
+  const c = asRecord(clinvar);
+  const rcv = asArray(c.rcv);
   const out: string[] = [];
   for (const r of rcv) {
-    for (const s of asArray(r?.clinical_significance)) if (typeof s === "string") out.push(s);
+    for (const s of asArray(asRecord(r).clinical_significance)) {
+      if (typeof s === "string") out.push(s);
+    }
   }
   // some records expose significance at the top level too
-  for (const s of asArray(clinvar.clinical_significance)) if (typeof s === "string") out.push(s);
+  for (const s of asArray(c.clinical_significance)) {
+    if (typeof s === "string") out.push(s);
+  }
   return out;
 }
 
@@ -78,50 +86,65 @@ function alphaMissenseLabel(score: number | null): string | null {
 }
 
 function parseHit(hit: Hit | null): MyVariantParsed {
-  const clinvar = hit?.clinvar;
+  const h = asRecord(hit);
+  const clinvar = h.clinvar;
+  const gnomadGenome = asRecord(h.gnomad_genome);
+  const gnomadExome = asRecord(h.gnomad_exome);
+  const db = asRecord(h.dbnsfp);
+  const alphaMissense = asRecord(db.alphamissense);
+  const gerpPlus = asRecord(db["gerp++"]);
+  const gerp = asRecord(db.gerp);
+  const gerp91 = asRecord(gerp["91_mammals"]);
+  const phyloP = asRecord(db.phylop);
+  const phyloP100 = asRecord(phyloP["100way_vertebrate"]);
+  const spliceObj = asRecord(db.spliceai ?? h.spliceai);
+  const revel = asRecord(db.revel);
+  const cadd = asRecord(h.cadd);
+  const dbCadd = asRecord(db.cadd);
+  const sift = asRecord(db.sift);
+  const polyphen2 = asRecord(db.polyphen2);
+  const hdiv = asRecord(polyphen2.hdiv);
   const sigs = normSigList(clinvar);
   const { status, headline } = classifyClinvar(sigs);
 
-  const af = maxNum([hit?.gnomad_genome?.af, hit?.gnomad_exome?.af]);
-  const db = hit?.dbnsfp ?? {};
+  const af = maxNum([gnomadGenome.af, gnomadExome.af]);
 
-  const amScore = maxNum(db?.alphamissense?.score);
-  const gerp = maxNum(db?.["gerp++"]?.rs) ?? maxNum(db?.gerp?.["91_mammals"]?.score);
-  const phyloP = maxNum(db?.phylop?.["100way_vertebrate"]?.score);
+  const amScore = maxNum(alphaMissense.score);
+  const gerpScore = maxNum(gerpPlus.rs) ?? maxNum(gerp91.score);
+  const phyloPScore = maxNum(phyloP100.score);
 
   // SpliceAI deltas (present only for some variants/builds)
-  const spliceObj = db?.spliceai ?? hit?.spliceai;
-  const spliceaiMax = spliceObj
+  const spliceaiMax = Object.keys(spliceObj).length
     ? maxNum([
-        spliceObj?.dp_ag,
-        spliceObj?.dp_al,
-        spliceObj?.dp_dg,
-        spliceObj?.dp_dl,
-        spliceObj?.ds_ag,
-        spliceObj?.ds_al,
-        spliceObj?.ds_dg,
-        spliceObj?.ds_dl,
+        spliceObj.dp_ag,
+        spliceObj.dp_al,
+        spliceObj.dp_dg,
+        spliceObj.dp_dl,
+        spliceObj.ds_ag,
+        spliceObj.ds_al,
+        spliceObj.ds_dg,
+        spliceObj.ds_dl,
       ])
     : null;
 
   return {
     clinvarSignificance: headline,
     clinvarStatus: status,
-    clinvarRecordCount: asArray(clinvar?.rcv).length,
+    clinvarRecordCount: asArray(asRecord(clinvar).rcv).length,
     alreadyClassified: ["pathogenic", "likely_pathogenic", "benign", "likely_benign"].includes(status),
     gnomadAf: af,
     gnomadCommon: af !== null && af > 0.01,
     alphamissense: {
       score: amScore,
       label: alphaMissenseLabel(amScore),
-      predRaw: asArray(db?.alphamissense?.pred).filter((x): x is string => typeof x === "string"),
+      predRaw: asArray(alphaMissense.pred).filter((x): x is string => typeof x === "string"),
     },
-    revel: maxNum(db?.revel?.score),
-    cadd: maxNum(hit?.cadd?.phred ?? db?.cadd?.phred),
-    sift: firstStr(db?.sift?.pred),
-    polyphen: firstStr(db?.polyphen2?.hdiv?.pred),
+    revel: maxNum(revel.score),
+    cadd: maxNum(cadd.phred ?? dbCadd.phred),
+    sift: firstStr(sift.pred),
+    polyphen: firstStr(hdiv.pred),
     spliceaiMax,
-    perResidue: { gerp, phyloP },
+    perResidue: { gerp: gerpScore, phyloP: phyloPScore },
   };
 }
 

@@ -26,6 +26,16 @@ type Homology = {
   source?: { perc_id?: number };
 };
 
+type DioptEntry = {
+  score?: unknown;
+  count?: unknown;
+};
+
+type DioptResponse = {
+  results?: Record<string, Record<string, DioptEntry>>;
+  search_details?: { tool_count?: unknown };
+};
+
 function qualityFor(type: string | null): OrthologResult["quality"] {
   if (!type) return null;
   if (type === "ortholog_one2one") return "high";
@@ -49,14 +59,14 @@ async function lookupSymbol(geneId: string): Promise<string | null> {
 async function tryDiopt(symbol: string): Promise<{ score: number; max: number } | null> {
   try {
     const url = `https://www.flyrnai.org/tools/diopt/web/diopt_api/v9/get_orthologs_from_gene/9606/${encodeURIComponent(symbol)}/10090/none/none`;
-    const data = await fetchJson<any>(url, { timeoutMs: 12_000, retries: 1 });
+    const data = await fetchJson<DioptResponse>(url, { timeoutMs: 12_000, retries: 1 });
     const results = data?.results;
     if (!results || typeof results !== "object") return null;
     let best = -1;
-    for (const human of Object.values<any>(results)) {
+    for (const human of Object.values(results)) {
       if (!human || typeof human !== "object") continue;
-      for (const m of Object.values<any>(human)) {
-        const s = typeof m?.score === "number" ? m.score : Number(m?.count);
+      for (const m of Object.values(human)) {
+        const s = typeof m.score === "number" ? m.score : Number(m.count);
         if (Number.isFinite(s) && s > best) best = s;
       }
     }

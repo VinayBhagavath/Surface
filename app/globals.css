@@ -1,61 +1,201 @@
-/* Minimal base styles. Person B owns the real design system (Tailwind + shadcn,
-   calm/clinical palette). This keeps the backend dev/status page legible without
-   pulling in a design dependency. */
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
-* {
-  box-sizing: border-box;
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-serif: var(--font-newsreader), ui-serif, Georgia, "Times New Roman", serif;
+  --font-heading: var(--font-newsreader), ui-serif, Georgia, serif;
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* ── Confidence semantic tokens — SINGLE SOURCE OF TRUTH ──
+     pending=gray · low=amber · moderate=blue · high=green.
+     Each: base (marks/fills), -soft (tinted bg), -ink (text on soft). */
+  --color-confidence-pending: var(--confidence-pending);
+  --color-confidence-pending-soft: var(--confidence-pending-soft);
+  --color-confidence-pending-ink: var(--confidence-pending-ink);
+  --color-confidence-low: var(--confidence-low);
+  --color-confidence-low-soft: var(--confidence-low-soft);
+  --color-confidence-low-ink: var(--confidence-low-ink);
+  --color-confidence-moderate: var(--confidence-moderate);
+  --color-confidence-moderate-soft: var(--confidence-moderate-soft);
+  --color-confidence-moderate-ink: var(--confidence-moderate-ink);
+  --color-confidence-high: var(--confidence-high);
+  --color-confidence-high-soft: var(--confidence-high-soft);
+  --color-confidence-high-ink: var(--confidence-high-ink);
+  --color-flow: var(--flow);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
-html,
-body {
-  margin: 0;
-  padding: 0;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  color: #0f2a3a;
-  background: #f6f9fb;
-  line-height: 1.5;
+
+:root {
+  --radius: 0.7rem;
+
+  /* ── Clinical light palette: cool slate paper, steel-teal accent ── */
+  --background: oklch(0.985 0.005 230);
+  --foreground: oklch(0.28 0.03 245);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.28 0.03 245);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.28 0.03 245);
+  --primary: oklch(0.52 0.09 225);
+  --primary-foreground: oklch(0.99 0.005 230);
+  --secondary: oklch(0.962 0.008 232);
+  --secondary-foreground: oklch(0.32 0.03 245);
+  --muted: oklch(0.965 0.006 235);
+  --muted-foreground: oklch(0.52 0.022 245);
+  --accent: oklch(0.95 0.02 222);
+  --accent-foreground: oklch(0.30 0.04 240);
+  --destructive: oklch(0.58 0.17 25);
+  --border: oklch(0.915 0.008 240);
+  --input: oklch(0.915 0.008 240);
+  --ring: oklch(0.52 0.09 225);
+  --chart-1: oklch(0.64 0.14 155);
+  --chart-2: oklch(0.60 0.13 245);
+  --chart-3: oklch(0.72 0.15 70);
+  --chart-4: oklch(0.55 0.10 200);
+  --chart-5: oklch(0.52 0.09 225);
+  --sidebar: oklch(0.985 0.005 230);
+  --sidebar-foreground: oklch(0.28 0.03 245);
+  --sidebar-primary: oklch(0.52 0.09 225);
+  --sidebar-primary-foreground: oklch(0.99 0.005 230);
+  --sidebar-accent: oklch(0.95 0.02 222);
+  --sidebar-accent-foreground: oklch(0.30 0.04 240);
+  --sidebar-border: oklch(0.915 0.008 240);
+  --sidebar-ring: oklch(0.52 0.09 225);
+
+  /* ── Confidence palette ── */
+  --confidence-pending: oklch(0.63 0.018 245);
+  --confidence-pending-soft: oklch(0.965 0.006 240);
+  --confidence-pending-ink: oklch(0.46 0.02 245);
+  --confidence-low: oklch(0.72 0.15 70);
+  --confidence-low-soft: oklch(0.965 0.045 80);
+  --confidence-low-ink: oklch(0.52 0.12 62);
+  --confidence-moderate: oklch(0.60 0.13 245);
+  --confidence-moderate-soft: oklch(0.96 0.04 245);
+  --confidence-moderate-ink: oklch(0.47 0.13 252);
+  --confidence-high: oklch(0.64 0.14 155);
+  --confidence-high-soft: oklch(0.96 0.05 158);
+  --confidence-high-ink: oklch(0.46 0.11 158);
+  --flow: oklch(0.66 0.12 205);
 }
-a {
-  color: #1668a8;
+
+.dark {
+  --background: oklch(0.205 0.02 250);
+  --foreground: oklch(0.96 0.005 230);
+  --card: oklch(0.24 0.022 250);
+  --card-foreground: oklch(0.96 0.005 230);
+  --popover: oklch(0.24 0.022 250);
+  --popover-foreground: oklch(0.96 0.005 230);
+  --primary: oklch(0.70 0.11 220);
+  --primary-foreground: oklch(0.2 0.02 250);
+  --secondary: oklch(0.30 0.02 250);
+  --secondary-foreground: oklch(0.96 0.005 230);
+  --muted: oklch(0.30 0.02 250);
+  --muted-foreground: oklch(0.70 0.02 245);
+  --accent: oklch(0.32 0.03 240);
+  --accent-foreground: oklch(0.96 0.005 230);
+  --destructive: oklch(0.70 0.19 22);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.70 0.11 220);
+  --chart-1: oklch(0.70 0.14 155);
+  --chart-2: oklch(0.68 0.13 245);
+  --chart-3: oklch(0.78 0.15 70);
+  --chart-4: oklch(0.62 0.10 200);
+  --chart-5: oklch(0.70 0.11 220);
+  --sidebar: oklch(0.24 0.022 250);
+  --sidebar-foreground: oklch(0.96 0.005 230);
+  --sidebar-primary: oklch(0.70 0.11 220);
+  --sidebar-primary-foreground: oklch(0.2 0.02 250);
+  --sidebar-accent: oklch(0.32 0.03 240);
+  --sidebar-accent-foreground: oklch(0.96 0.005 230);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.70 0.11 220);
 }
-code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  background: #e8eef3;
-  padding: 0.1em 0.35em;
-  border-radius: 4px;
-  font-size: 0.9em;
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
 }
-.wrap {
-  max-width: 820px;
-  margin: 0 auto;
-  padding: 2.5rem 1.5rem 4rem;
+
+@layer components {
+  /* Faint lab-paper dot grid; opt-in per page wrapper. */
+  .surface-grid {
+    background-image: radial-gradient(var(--border) 0.9px, transparent 0.9px);
+    background-size: 24px 24px;
+    background-position: -12px -12px;
+  }
 }
-.card {
-  background: #fff;
-  border: 1px solid #dce6ed;
-  border-radius: 12px;
-  padding: 1.1rem 1.25rem;
-  margin: 0.75rem 0;
+
+/* ── Motion ── */
+@keyframes flow-move {
+  to {
+    background-position-x: 26px;
+  }
 }
-.btn {
-  display: inline-block;
-  background: #1668a8;
-  color: #fff;
-  text-decoration: none;
-  padding: 0.5rem 0.9rem;
-  border-radius: 8px;
-  margin: 0.25rem 0.4rem 0.25rem 0;
-  font-size: 0.95rem;
+@keyframes seg-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
-.muted {
-  color: #5a7383;
-  font-size: 0.9rem;
+.seg-in {
+  animation: seg-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.pill {
-  display: inline-block;
-  background: #e6f4ea;
-  color: #1d7a3f;
-  border-radius: 999px;
-  padding: 0.15rem 0.6rem;
-  font-size: 0.8rem;
-  font-weight: 600;
+@media (prefers-reduced-motion: reduce) {
+  .seg-in {
+    animation: none;
+  }
 }

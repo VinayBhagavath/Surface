@@ -1,148 +1,127 @@
-# CLAUDE.md — VUS Resolver (Research Engine / Person A)
+# CLAUDE.md - VUS Resolver
 
-Guidance for any future Claude (or human) working in this repo. Read this first.
+Guidance for future agents or humans working in this merged repo.
 
-## What this is
+## What This Is
 
-The **backend "research engine"** for a hackathon project, the **VUS Resolver**.
-Given a genetic variant flagged "variant of uncertain significance" (VUS), it
-autonomously gathers cross-species evidence (human predictors + gnomAD + mouse
-knockout data) and produces a confidence-scored, ACMG-mapped explanation a
-patient can take to a doctor. No GPU, no model training — live calls to public
-genomics APIs plus reasoning calls to **Grok (xAI)**.
+VUS Resolver turns a genetic variant of uncertain significance into a live,
+confidence-scored evidence review. A user enters an rsID/HGVS string or uploads a
+VCF, chooses the clinical context, and watches an Inngest pipeline gather real
+human and cross-species evidence before producing a Doctor Brief.
 
-**This repo is Person A's half** (connectors, Inngest pipeline, confidence math,
-Grok reasoning, Watcher). **Person B** owns the Next.js UI + Grok voice and
-builds against the shared contract in `lib/types.ts`. There is a minimal
-placeholder `app/page.tsx` Person B replaces.
+The merged app includes both halves of the hackathon project:
 
-**Hard constraint: NO mocked API responses, no local fallback data, no simulated
-events.** A real query that returns nothing is a valid `EvidenceFragment` with
-`found: false`, never a fabricated value. The Watcher polls real APIs on an
-accelerated cadence — it does not fake updates. See `docs/WATCHER.md`.
+- Frontend: Next.js UI, intake, session stream, Doctor Brief, Watch dashboard,
+  fixture dev harnesses, optional browser voice, and Grok follow-up Q&A.
+- Backend: public genomics connectors, Inngest evidence pipeline, Realtime
+  stream, Grok reasoning calls, layered confidence math, stored run outputs, and
+  Watcher registration/re-checks.
+
+Hard constraint: do not fabricate evidence. A real empty API result is rendered
+as `found:false`; it is not replaced with fallback data. Fixture files are
+captured real runs for demos/dev harnesses only. Real user submissions must use
+the live pipeline.
 
 ## Stack
 
-TypeScript · Next.js 14 (App Router) · **Inngest v3** (durable steps, fan-out,
-cron, Realtime) · **Grok / xAI** (OpenAI-compatible API, model `grok-4.3`) ·
-Vercel · vitest. Genomics APIs are all keyless and public.
+- Next.js 16 App Router, React 19, TypeScript strict.
+- Tailwind v4 and shadcn/radix UI.
+- Inngest v3 with `@inngest/realtime` middleware.
+- Grok/xAI via `openai` for backend reasoning and AI SDK `@ai-sdk/xai` for
+  optional follow-up Q&A.
+- pnpm is the package manager. Keep one lockfile: `pnpm-lock.yaml`.
 
-> ⚠️ **Inngest is pinned to v3** (`inngest@^3`), NOT v4. `@inngest/realtime@0.4.6`
-> peer-depends on `inngest@^3.42.3`; installing inngest v4 breaks the middleware
-> and `createFunction` types. If you bump one, bump both compatibly.
+The Inngest version decision is resolved: use `inngest@^3.54.2` with
+`@inngest/realtime@^0.4.7`. Person A's pipeline and Realtime middleware are
+verified on v3; v4 removed/broke the middleware path this demo depends on.
 
-## Pipeline (Steps 0–6) — `lib/pipeline/run-evidence-pipeline.ts`
+## Directory Map
 
-The orchestrator is the single source of truth. It is abstracted over a
-`runStep` + `publish` pair so the **same code** runs under Inngest (durable) and
-under the local capture script (in-process). Steps:
-
-- **0 — VEP router** (`ensembl-vep`): consequence type + gene + GRCh38 coords.
-- **1 — gene prior** (`gnomad-constraint`): LOEUF / pLI / missense-z. Parallel with 0.
-- **2 — variant effect** (`myvariant` → ClinVar + gnomAD freq + dbNSFP; `ensembl-conservation`):
-  then **Grok #1 predictor-leadership** (which predictor leads + disagreement flag).
-  **Early-exit** here if already-classified or population-common.
-- **3 — Grok #2 Mechanism-Compatibility Gate** → `gate ∈ [0,1]`. The load-bearing
-  call: can a loss-of-function mouse knockout even model this gene's disease?
-- **4 — cross-species fan-out**: `ensembl-diopt` (ortholog) → `impc` (KO phenotypes
-  + lethality) → `monarch` (MP↔HPO similarity).
-- **5 — Grok #3 cross-species sanity check**: reads the ACTUAL MP/HPO terms (not
-  just the Monarch number), handles lethality-as-signal, assigns relevance to each
-  IMPC fragment (re-published as updates).
-- **6 — layered confidence** (`lib/confidence/layered-model.ts`, pure) +
-  **Grok #4 synthesis** → Evidence Card + Doctor Brief + ACMG rows → store →
-  publish `complete` → register Watcher.
-
-`cross_species = mechanism_gate × cross_species_raw` — the gate suppresses a
-dramatic-but-irrelevant mouse phenotype (e.g. a GoF gene's lethal knockout).
-
-## Directory map
-
-```
+```text
+app/
+  page.tsx                         live intake
+  session/[runId]/page.tsx         live or fixture session shell
+  brief/[runId]/page.tsx           stored live output or captured fixture demo
+  watch/page.tsx                   real Watcher store dashboard
+  api/inngest/route.ts             Inngest serve endpoint
+  api/realtime-token/route.ts      scoped Realtime subscription token
+  api/brief/[runId]/route.ts       stored RunOutput JSON
+  api/test-trigger/route.ts        backend test trigger
+  dev/pipeline, dev/run            dev harnesses; keep functional
+components/                        UI components and shadcn primitives
+fixtures/                          captured real demo streams/outputs
+inngest/                           v3 client, channels, pipeline, watcher
 lib/
-  types.ts                      ← THE CONTRACT with Person B (don't drift)
-  env.ts, http.ts, store.ts     ← env (lazy), fetch wrapper, run-output/watch store
-  demo-variants.ts              ← the 3 real demo variants
-  connectors/                   ← 7 connectors, each → EvidenceFragment[]
-  reference/                    ← gene-mechanism.json, panel-to-hpo.json, acmg.ts
-  grok/                         ← client + 4 reasoning prompts + narration
-  confidence/layered-model.ts   ← pure function + .test.ts
-  pipeline/run-evidence-pipeline.ts, config.ts
-inngest/                        ← client, channels, evidence-pipeline, watcher, functions
-app/                            ← layout, placeholder page, api/{inngest,test-trigger,realtime-token,brief/[runId]}
-scripts/                        ← test-connectors.ts, capture-fixture.ts
-fixtures/                       ← captured RealtimeEvent[] + output per demo variant (handoff)
-docs/                           ← CONTRACT, HANDOFF, DEMO_VARIANTS, WATCHER, DEPLOY, DEVIATIONS
+  types.ts                         canonical shared contract
+  realtime-constants.ts            event name and channel helper
+  useEvidenceRun.ts                fixture/live reducer + v3 subscription hook
+  connectors/                      public genomics connectors
+  confidence/                      deterministic layered confidence model
+  grok/                            backend Grok prompts and schemas
+  pipeline/                        orchestrator shared by Inngest/capture
+  reference/                       mechanism, panel/HPO, ACMG references
+  store.ts                         memory/KV run output and Watcher store
+  voice/                           browser speech hooks
+scripts/                           connector tests and fixture capture
+docs/                              contract, decisions, deployment, handoff
 ```
 
-## Running it
+## Running Locally
 
 ```bash
-# 1. env: copy .env.example → .env.local, set XAI_API_KEY (already set in this repo)
-# 2. two terminals:
-npm run dev          # Next.js app  (http://localhost:3000)
-npm run inngest      # Inngest dev server, pointed at /api/inngest
+pnpm install
 
-# fire a run (no UI needed):
-curl "http://localhost:3000/api/test-trigger?demo=ldlr"      # → { runId, channel, brief }
-curl "http://localhost:3000/api/brief/<runId>"               # poll for output
-curl "http://localhost:3000/api/test-trigger?watch=1"        # force a Watcher re-check
+# terminal 1
+pnpm dev
+
+# terminal 2
+pnpm inngest
 ```
 
-### Verifying without the full stack
+Open `http://localhost:3000`. Normal intake submissions redirect to
+`/session/<runId>?live=1` and subscribe to the real Realtime stream. The Inngest
+dev server introspects `/api/inngest`.
+
+Required env:
+
+- `XAI_API_KEY` for Grok reasoning and follow-up Q&A.
+- Optional `XAI_BASE_URL`, `XAI_MODEL`.
+- Optional `KV_REST_API_URL`/`KV_REST_API_TOKEN` or Upstash equivalents for a
+  durable store. Without KV, `next dev` uses an in-memory store.
+
+## Verification Commands
 
 ```bash
-npm run connectors           # live test all 7 connectors for the 3 demo variants
-npm run capture [ldlr|…]     # run the FULL pipeline locally (live APIs + Grok),
-                             #   print the RealtimeEvent stream, write fixtures/
-npm test                     # vitest — confidence model unit tests
-npm run typecheck            # tsc --noEmit
-npm run build                # production build (Vercel-deployable)
+pnpm build
+pnpm typecheck
+pnpm lint
+pnpm test
+pnpm connectors
+pnpm capture ldlr
+pnpm capture cacna1c
+pnpm capture kcnq1
 ```
 
-`npm run capture` is the fastest end-to-end check — it runs the real orchestrator
-in-process (same code Inngest runs) and writes `fixtures/<id>-run.json` +
-`fixtures/<id>-output.json`.
+The full demo verification is:
 
-## Demo variants (all real, no mocks) — `lib/demo-variants.ts`
+1. Run `pnpm dev` and `pnpm inngest`.
+2. Submit LDLR (`rs879254403`, `hypercholesterolemia`) from `/`.
+3. Confirm live fragments, pipeline updates, completion, Doctor Brief, and Watch
+   registration.
+4. Submit CACNA1C (`rs776805699`, `arrhythmia`) and confirm the Mechanism Gate
+   closes and suppresses cross-species evidence.
+5. Confirm voice off leaves the app fully usable, and follow-up Q&A is grounded
+   in the visible evidence when `XAI_API_KEY` is available.
 
-| id | variant | context | outcome (verified live) |
-|----|---------|---------|--------------------------|
-| `ldlr` | LDLR p.Phe32Ser (rs879254403) | hypercholesterolemia | **HIGH** — everything agrees, gate open |
-| `cacna1c` | CACNA1C p.Arg508Trp (rs776805699) | arrhythmia | gate **0.10** → cross-species **suppressed 0.07** (GoF) |
-| `kcnq1` | KCNQ1 p.Ala194Val (rs2133727494) | long_qt | **LOW** — predictors disagree, no IMPC phenotype |
+## Conventions
 
-See `docs/DEMO_VARIANTS.md` for the real underlying numbers.
-
-## Conventions / gotchas
-
-- **`@/` path alias** → repo root (tsconfig `paths`, no `baseUrl`). Works in Next,
-  vitest (alias in `vitest.config.ts`), and tsx.
-- **Run scripts from the repo root.** tsx resolves the entry relative to CWD; a
-  stray `cd` into `node_modules/...` will make `npx tsx scripts/x.ts` fail with a
-  confusing `@inngest/realtime/...` not-found. (This bit me; it's not a code bug.)
-- **Connectors** take a small typed input, return `EvidenceFragment[]` (some also
-  return a structured `parsed`/`result`/`resolved` the pipeline reuses). They
-  THROW only on HTTP failure (so Inngest retries); empty real results are
-  `found: false`.
-- **Grok prompts** are narrow and grounded (only the fields each step needs) and
-  each ends with an explicit JSON template. Outputs are zod-validated with one
-  self-repair retry (`lib/grok/client.ts`). Four reasoning calls per run, kept
-  separate for auditability — never one mega-prompt.
-- **Confidence model is pure** and authoritative for the `overall` label; Grok
-  synthesis writes the prose and explains the label, it does not override it.
-- **Realtime publishes are wrapped in `step.run`** in the Inngest adapter so a
-  retry/replay never re-emits a duplicate event.
-- **Store** (`lib/store.ts`): in-memory by default (fine for `next dev` + Inngest
-  dev, single process); set `KV_REST_API_URL`/`KV_REST_API_TOKEN` for Vercel.
-
-## Status
-
-Done & verified live: all 7 connectors, 4 Grok calls, confidence model (unit
-tests), full orchestrator (3 variants), full Inngest durable pipeline (event →
-brief), Realtime token route, Watcher (cron + on-demand event, ran live),
-production build, clean typecheck.
-
-Person B's remaining work: the `/`, `/session/[runId]`, `/brief/[runId]`,
-`/watch` routes, the `useEvidenceRun` hook (against `/api/realtime-token`), and
-Grok voice. See `docs/HANDOFF.md`.
+- Read `node_modules/next/dist/docs/` before changing Next APIs; this repo uses
+  a newer Next version than most older examples.
+- `lib/types.ts` is authoritative. Adapt callers to it rather than forking types.
+- `RealtimeEvent.complete` carries `briefUrl`, not inline brief data.
+- Upsert fragments by `EvidenceFragment.id`; IMPC relevance can republish the
+  same card with updated relevance.
+- The Mechanism Gate is a 0..1 multiplier/valve, not a confidence bar.
+- Keep `/dev/pipeline` and `/dev/run` until the final cleanup pass.
+- Keep Grok prompts narrow and grounded. Do not add a mega-prompt or let Grok
+  override the deterministic confidence label.

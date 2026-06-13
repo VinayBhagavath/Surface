@@ -7,10 +7,11 @@ import { getOutput } from "@/lib/store";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(_req: Request, { params }: { params: { runId: string } }) {
-  const out = await getOutput(params.runId);
+export async function GET(_req: Request, { params }: { params: Promise<{ runId: string }> }) {
+  const { runId } = await params;
+  const out = await getOutput(runId);
   if (!out) {
-    return NextResponse.json({ error: "not found", runId: params.runId }, { status: 404 });
+    return NextResponse.json({ error: "not found", runId }, { status: 404 });
   }
   return NextResponse.json(out);
 }

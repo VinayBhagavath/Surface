@@ -98,7 +98,7 @@ export async function runEvidencePipeline(
   const gene = resolved.geneSymbol;
 
   if (!gene || !vepFrag.found) {
-    const out = buildUnresolvedOutput(input, briefUrl);
+    const out = buildUnresolvedOutput(input);
     await runStep("save-unresolved", async () => (await saveOutput(input.runId, out), null));
     await emitNarration("n-unresolved", "I couldn't resolve this variant to a gene, so I can't investigate further — please double-check the notation.");
     await publish("c-unresolved", { type: "complete", briefUrl });
@@ -136,7 +136,7 @@ export async function runEvidencePipeline(
 
   // ── Early-exit check (Step after 0/1/2) ────────────────────────────────────
   if (mv.parsed.alreadyClassified || mv.parsed.gnomadCommon) {
-    const out = buildEarlyExitOutput(input, gene, mv.parsed, fragments, computeLayeredConfidence(ci), briefUrl);
+    const out = buildEarlyExitOutput(input, gene, mv.parsed, fragments, computeLayeredConfidence(ci));
     await runStep("save-early", async () => (await saveOutput(input.runId, out), null));
     await emitNarration("n-early", earlyNarration(mv.parsed));
     await emitPipeline("p-early", out.evidenceCard.pipeline);
@@ -406,7 +406,6 @@ function buildEarlyExitOutput(
   parsed: { gnomadCommon: boolean; alreadyClassified: boolean; clinvarStatus: string; clinvarSignificance: string | null; gnomadAf: number | null },
   fragments: EvidenceFragment[],
   base: ConfidencePipelineState,
-  briefUrl: string,
 ): RunOutput {
   const generatedAt = new Date().toISOString();
   const benignDirection = parsed.gnomadCommon || parsed.clinvarStatus.includes("benign");
@@ -459,7 +458,7 @@ function buildEarlyExitOutput(
   return { evidenceCard, doctorBrief };
 }
 
-function buildUnresolvedOutput(input: EvidenceRequestedData, _briefUrl: string): RunOutput {
+function buildUnresolvedOutput(input: EvidenceRequestedData): RunOutput {
   const generatedAt = new Date().toISOString();
   const summary = `Could not resolve "${input.variant}" to a gene/consequence via Ensembl VEP. Please check the HGVS notation or rsID.`;
   const pipeline: ConfidencePipelineState = {
