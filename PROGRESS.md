@@ -130,6 +130,34 @@ Phase 1 (unify + harden the xAI client) — DONE.
   gate fallback is a conservative 0.5 (never silently 1.0). Verified by
   `lib/grok/fallbacks.test.ts` (typecheck + lint + 10 tests green).
 
+Phase 2 (real patient VCF upload + multi-variant annotation + selection) — DONE.
+- `lib/vcf.ts`: dependency-free VCF parser — every record (CHROM/POS/ID/REF/ALT,
+  GT→zygosity), GRCh38 `##reference`, and structured diagnostics for empty /
+  not-a-VCF / header-only / all-filtered-out. Produces the VEP query per record
+  (rsID, else genomic HGVS). Unit-tested (`lib/vcf.test.ts`).
+- `app/actions/annotate-vcf.ts`: server action annotating every parsed record to
+  gene + consequence + protein change via the existing Ensembl VEP connector
+  (bounded concurrency). Raw file never leaves the browser — only parsed
+  coordinates are sent; nothing persisted or logged at the variant level.
+- `app/page.tsx`: upload UX with drag/drop + click, `.vcf`/`.vcf.gz` (browser
+  gunzip), 25 MB cap, idle→reading→annotating→ready states, friendly specific
+  errors, an in-UI privacy line, the annotated multi-variant selection list
+  (gene, protein change, consequence, zygosity), an editable clinical-context
+  (defaults to "cancer"), and "Investigate" → live pipeline at
+  `/session/[runId]?live=1`. Demo examples preserved as replays.
+- `components/SessionView.tsx`: now drives the DNA view from the live VEP
+  fragment and the summary from the run's real saved output when `live`; demo
+  mode unchanged. Re-added follow-up Q&A (Gate 4.6) wired to the unified
+  `askFollowup` (grok-4.3) with optional browser voice.
+- Gene-mechanism table: added BRCA2, MSH2, MSH6, PALB2, CHEK2, ATM, APC; flipped
+  TP53 → GoF (R175 hotspots are dominant-negative/GoF → gate closes; null alleles
+  noted as the LoF case).
+- Verified live: parse + VEP annotation of the real `patient_PT001_raw.vcf`
+  resolves all 12 variants to the correct genes (BRCA1, BRCA2×2, MLH1×2, APC,
+  TP53 R175, PTEN, PALB2, CHEK2, ATM, MSH6). (VEP reports TP53 as p.Arg175Leu,
+  not His — same R175 contact-residue hotspot; GoF gate-closing unaffected.)
+  `pnpm build`, typecheck, lint, and 18 unit tests all green.
+
 ## Last Commit
 
 Integration merge commit on `main`; see `git log -1 --oneline` for the final

@@ -17,6 +17,7 @@ export default async function SessionPage({
   const live = sp.live === "1" || sp.live === "true";
   const variant = typeof sp.variant === "string" ? sp.variant : undefined;
   const clinicalContext = typeof sp.context === "string" ? sp.context : undefined;
+  const gene = typeof sp.gene === "string" ? sp.gene : undefined;
 
   return (
     <SessionView
@@ -25,6 +26,7 @@ export default async function SessionPage({
       live={live}
       variant={variant}
       clinicalContext={clinicalContext}
+      gene={gene}
     />
   );
 }

@@ -30,9 +30,51 @@
   },
   "TP53": {
     "inheritanceMode": "dominant",
-    "mechanism": "both",
-    "notes": "Li-Fraumeni. Both loss-of-function and dominant-negative/gain-of-function missense alleles are documented — mechanism is variant-specific, so model-organism applicability must be interpreted with caution.",
-    "source": "ClinGen; OMIM 191170"
+    "mechanism": "GoF",
+    "notes": "Li-Fraumeni. The recurrent contact/conformational missense hotspots (e.g. R175H, R248Q, R273H) act by DOMINANT-NEGATIVE inhibition of wild-type p53 plus neomorphic GAIN-of-function activities — a Trp53-null knockout (even though its tumor phenotype is dramatic) does NOT model that mechanism, so for a hotspot missense VUS the mechanism gate should CLOSE. (Truncating/null TP53 alleles act by loss of function and would be the LoF case; mechanism is therefore allele-specific and treated as GoF for the missense-hotspot interpretation here.)",
+    "source": "ClinGen TP53 VCEP; OMIM 191170"
+  },
+  "BRCA2": {
+    "inheritanceMode": "dominant",
+    "mechanism": "LoF",
+    "notes": "Hereditary breast/ovarian cancer; loss of the homologous-recombination DNA-repair tumor-suppressor function. Brca2-null mice are embryonic lethal (strong essentiality signal).",
+    "source": "ClinGen; OMIM 600185"
+  },
+  "MSH2": {
+    "inheritanceMode": "dominant",
+    "mechanism": "LoF",
+    "notes": "Lynch syndrome; loss of DNA mismatch-repair function (two-hit tumor suppressor).",
+    "source": "ClinGen; OMIM 609309"
+  },
+  "MSH6": {
+    "inheritanceMode": "dominant",
+    "mechanism": "LoF",
+    "notes": "Lynch syndrome; loss of DNA mismatch-repair function (partners with MSH2).",
+    "source": "ClinGen; OMIM 600678"
+  },
+  "PALB2": {
+    "inheritanceMode": "dominant",
+    "mechanism": "LoF",
+    "notes": "Hereditary breast/pancreatic cancer; loss of function — PALB2 partners BRCA2 in homologous-recombination repair.",
+    "source": "ClinGen; OMIM 610355"
+  },
+  "CHEK2": {
+    "inheritanceMode": "dominant",
+    "mechanism": "LoF",
+    "notes": "Moderate-penetrance breast cancer predisposition; loss of the CHK2 DNA-damage checkpoint kinase function.",
+    "source": "ClinGen; OMIM 604373"
+  },
+  "ATM": {
+    "inheritanceMode": "recessive",
+    "mechanism": "LoF",
+    "notes": "Biallelic loss causes ataxia-telangiectasia (Atm-null mice are the disease model — homozygous data is the relevant zygosity); heterozygous carriers have an elevated breast-cancer risk. Loss-of-function mechanism either way, so a knockout is informative.",
+    "source": "ClinGen; OMIM 607585"
+  },
+  "APC": {
+    "inheritanceMode": "dominant",
+    "mechanism": "LoF",
+    "notes": "Familial adenomatous polyposis / hereditary colorectal cancer; loss of the APC tumor-suppressor (Wnt-pathway) function. Apc-mutant mice develop intestinal adenomas.",
+    "source": "ClinGen; OMIM 611731"
   },
   "MLH1": {
     "inheritanceMode": "dominant",
