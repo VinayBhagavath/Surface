@@ -4,10 +4,11 @@ _Read this first when resuming. Trust it over assumptions; if it conflicts with 
 investigate before proceeding._
 
 ## Current status
-Step 5 (`/` intake) complete and **verified** — form + VCF affordance + clinical-context Select +
-3 demo launchers; submit fires `startRun` (emit attempted — ECONNREFUSED on this branch without
-the Inngest dev server, caught client-side) and navigates to `/session/<uuid>?demo=…`.
-**Next: Step 6 — `/session/[runId]` (the core experience).**
+Step 6 (`/session/[runId]`) complete and **verified** — two-pane (Conversation + Evidence
+Trajectory) with the pipeline-strip header, driven by `useEvidenceRun` (fixture, `?demo=`).
+cacna1c verified: gate ×0.10, Cross-Species dampened (op 0.42) + label "low" (0.69→0.07), overall
+**High from human evidence** (faithful to Person A's gated model), brief CTA + watch confirmation.
+**Next: Step 7 — `/brief/[runId]` (printable Doctor Brief).**
 
 Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typecheck` + `pnpm lint` clean.
 
@@ -29,12 +30,18 @@ Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typechec
 - [x] **Step 5** — `app/page.tsx` intake: variant input + VCF upload + clinical-context `<Select>`
       (`CLINICAL_CONTEXT_OPTIONS`) + 3 demo launchers. Submit → uuid runId → `startRun` → redirect to
       `/session/[runId]?demo=<mapped>`. Verified: action fires with correct payload, navigation works.
+- [x] **Step 6** — `/session/[runId]` (server awaits params/searchParams) + `components/SessionView.tsx`:
+      ConfidencePipelineStrip header, Conversation (narration bubbles + thinking dots + completion
+      block w/ brief CTA + watch note), Evidence Trajectory (fragment cards w/ source icons + relevance
+      chips, Mechanism-Gate marker before cross-species, queued placeholders). Enriched `DEMOS`/`DEMO_BY_ID`.
 
 ## Next (immediate)
-Step 6 — `app/session/[runId]/page.tsx` (**await `params`** — Next 16): two-pane. Header =
-ConfidencePipelineStrip wired to `useEvidenceRun(runId, { source:"fixture", fixture: DEMO_RUNS[demo] })`
-(`?demo=`, default ldlr). Right = Evidence Trajectory (card per fragment + queued placeholders). Left =
-Conversation (narrations). On complete → "View Doctor Brief" → `/brief/[runId]` + watch confirmation.
+Step 7 — `app/brief/[runId]/page.tsx` (await params + `?demo`): render a `DoctorBrief` (from
+`DEMO_OUTPUTS[demo]` for now — real `*-output.json`). Plain `summary`, `overall` (ConfidenceLabel) +
+`perLayerReasons` (+ gate value from `evidenceCard.pipeline.mechanismGate`), ACMG/AMP `<table>` (code,
+direction, strength, fact), per-row `caveat` **verbatim**, `whatWouldChangeThis`/`suggestedFollowUp`.
+Print stylesheet (clean one-page PDF) + share/download. NOTE: brief shape = `overall` string,
+`summary`, `perLayerReasons`, `AcmgRow.caveat?` (not the old `plainSummary`/`layers`/`ps3Caveat`).
 
 ## Known issues / TODOs
 - **Tailwind v4 + Turbopack stale cache:** after adding new `@theme` tokens + their utilities,
@@ -63,4 +70,4 @@ Conversation (narrations). On complete → "View Doctor Brief" → `/brief/[runI
       `panel-to-hpo.json` labels). Send the `value` key as `clinicalContext`.
 
 ## Last commit
-Step 4 `a3db573`. Step 5 committing now. Branch `yesh`. Run `git log --oneline -10`.
+Step 5 `c8de2c3`. Step 6 committing now. Branch `yesh`. Run `git log --oneline -10`.

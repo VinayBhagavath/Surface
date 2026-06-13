@@ -23,16 +23,50 @@ export type DemoId = "ldlr" | "cacna1c" | "kcnq1";
 
 export type DemoMeta = {
   id: DemoId;
-  label: string;
+  gene: string;
+  variant: string;
+  clinicalContext: string;
+  scenario: string;
+  tone: "high" | "low" | "pending"; // confidence accent for the dot
   blurb: string;
 };
 
 /** Selectable demo runs, in the order we want to offer them. */
 export const DEMOS: DemoMeta[] = [
-  { id: "ldlr", label: "LDLR — gate open", blurb: "Everything agrees; cross-species evidence flows through. Overall HIGH." },
-  { id: "cacna1c", label: "CACNA1C — gate closed", blurb: "Mechanism gate closes (~0.10); a strong mouse signal is correctly suppressed." },
-  { id: "kcnq1", label: "KCNQ1 — low confidence", blurb: "Predictor disagreement and weak mouse evidence; stays uncertain." },
+  {
+    id: "ldlr",
+    gene: "LDLR",
+    variant: "rs879254403",
+    clinicalContext: "hypercholesterolemia",
+    scenario: "Gate open — everything agrees",
+    tone: "high",
+    blurb: "Cross-species evidence flows through. Overall HIGH.",
+  },
+  {
+    id: "cacna1c",
+    gene: "CACNA1C",
+    variant: "rs776805699",
+    clinicalContext: "arrhythmia",
+    scenario: "Gate closed — mouse signal suppressed",
+    tone: "low",
+    blurb: "Mechanism gate closes (~0.10); a strong mouse signal is correctly suppressed.",
+  },
+  {
+    id: "kcnq1",
+    gene: "KCNQ1",
+    variant: "rs2133727494",
+    clinicalContext: "long_qt",
+    scenario: "Low — predictor disagreement",
+    tone: "pending",
+    blurb: "Predictor disagreement and weak mouse evidence; stays uncertain.",
+  },
 ];
+
+export const DEMO_BY_ID: Record<DemoId, DemoMeta> = {
+  ldlr: DEMOS[0],
+  cacna1c: DEMOS[1],
+  kcnq1: DEMOS[2],
+};
 
 export const DEMO_RUNS: Record<DemoId, RealtimeEvent[]> = {
   ldlr: asEvents(ldlrRunJson),
