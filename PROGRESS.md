@@ -20,16 +20,18 @@ Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typechec
 - [x] **Step 2** — clinical palette + confidence tokens (`app/globals.css`), Newsreader serif,
       `components/ConfidencePipelineStrip.tsx` (Mechanism Gate = sluice valve), layout with
       TooltipProvider + Toaster, dev preview at `/dev/pipeline`, `components/CLAUDE.md` conventions.
-- [x] **Step 3** — fixtures `fixtures/kcnq1-run.ts` (`kcnq1Run`, gate ≈ 0.95) + `fixtures/gate-closed-run.ts`
-      (`gateClosedRun`, SCN8A gain-of-function, gate ≈ 0.10, strong cross-species suppressed).
-      Ordered `RealtimeEvent[]`, no casts. pipeline_update events carry CUMULATIVE state.
+- [x] **Step 3** — fixtures. Built typed scaffolds, then **converged to Person A's real captured
+      JSON**: `fixtures/runs.ts` wraps `*-run.json` (`RealtimeEvent[]`) + `*-output.json` (`RunOutput`).
+      Scenario map: ldlr=gate-open · cacna1c=gate-closed · kcnq1=low. Also **adopted Person A's
+      authoritative `lib/types.ts`** (adds RunOutput/EvidenceCard/evolved DoctorBrief).
 
 ## Next (immediate)
 Step 4 — `lib/useEvidenceRun.ts`: stable return `{ fragments, pipeline, narrations, complete,
-briefUrl }`. Fixture mode replays a `RealtimeEvent[]` on a ~700ms timer; merge each pipeline_update
-field-by-field (non-null wins); accumulate fragments + narrations; set complete/briefUrl on the
-`complete` event. Live mode = stub `subscribeToRun(runId, onEvent)` that throws "not yet wired"
-(Step 9). Throwaway test page logs the accumulating state advancing over time.
+briefUrl }`. Fixture mode replays a `RealtimeEvent[]` (from `fixtures/runs.ts`) on a ~700ms timer.
+Per Person A's alignment §6: **UPSERT fragments by `data.id`** (same id = update, e.g. IMPC relevance),
+**REPLACE `pipeline` on each `pipeline_update`** (cumulative), accumulate narrations, set
+complete/briefUrl on `complete`. Live mode = stub `subscribeToRun(runId, onEvent)` that throws
+"not yet wired" (Step 9). Throwaway test page shows the accumulating state advancing over time.
 
 ## Known issues / TODOs
 - **Tailwind v4 + Turbopack stale cache:** after adding new `@theme` tokens + their utilities,
@@ -58,5 +60,5 @@ field-by-field (non-null wins); accumulate fragments + narrations; set complete/
       `panel-to-hpo.json` labels). Send the `value` key as `clinicalContext`.
 
 ## Last commit
-Rebased onto Person A's `2e36237` (cross-team alignment + real fixtures). Step 3 (`e0b74b7`,
-typed fixtures) replayed on top. Branch `yesh`. Run `git log --oneline -10`.
+Step 3 rebased onto Person A's `2e36237`, then an integration commit (converge types.ts +
+real-JSON fixtures). Branch `yesh`. Run `git log --oneline -10`.

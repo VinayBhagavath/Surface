@@ -64,8 +64,22 @@ Terse log of non-obvious choices so a future session doesn't re-litigate settled
   utilities resolve to transparent — confirmed `--confidence-*` missing from compiled CSS).
   Fix: `rm -rf .next` + restart `pnpm dev`. Captured in `components/CLAUDE.md`.
 
-## Pending cross-team items (see PROGRESS.md "Blocked on / awaiting Person A")
-- **inngest major version (v3 vs v4)** — Person B is on v4 with built-in Realtime (no
-  middleware). Person A must confirm they're also on v4 and publish via the built-in API, or we
-  pin v3 together and restore the spec's `realtimeMiddleware`.
-- `DoctorBrief` shape to be proposed to and frozen with Person A before Step 7.
+- **Converged `lib/types.ts` to Person A's authoritative version (2026-06-13).** Person A pushed
+  cross-team alignment + real fixtures to `yesh`. Their `types.ts` is a superset: the streaming
+  types (`EvidenceFragment`, `ConfidencePipelineState`, `RealtimeEvent`) are identical to ours, and
+  it adds `ConfidenceLabel`, `EvidenceSource`, `EvidenceRequestedData`, `EvidenceCard`, `RunOutput`,
+  and an evolved `DoctorBrief` (`overall: ConfidenceLabel` string; `summary`/`perLayerReasons` field
+  names; per-row `AcmgRow.caveat?` instead of a top-level `ps3Caveat`; +geneSymbol/suggestedFollowUp/
+  generatedAt). Adopted verbatim so the FROZEN contract stays byte-identical on both sides. `/brief`
+  (Step 7) is built against this shape + the real `*-output.json`.
+- **Pivoted fixtures to Person A's real captured JSON.** Deleted the hand-built `kcnq1-run.ts` /
+  `gate-closed-run.ts`; `fixtures/runs.ts` now wraps the real `*-run.json` (`RealtimeEvent[]`) and
+  `*-output.json` (`RunOutput`) with contained `as` casts (the README-endorsed pattern for JSON
+  imports). Scenario map: **ldlr** = gate-open/high · **cacna1c** = gate-closed · **kcnq1** = low.
+
+## Pending cross-team items (see docs/CROSS-TEAM-ALIGNMENT.md + PROGRESS.md)
+- **inngest major version — v3 vs v4 (TOP merge blocker).** Person A is verified on **v3** +
+  `realtimeMiddleware` (on `backend`); Person B is on **v4** (built-in realtime, no middleware).
+  The team must pick ONE before the live wiring (Step 9) / final merge: either Person B pins v3 and
+  restores `realtimeMiddleware()` in `inngest/client.ts`, or Person A upgrades to v4. Does NOT block
+  fixture-first UI (Steps 4–8).
