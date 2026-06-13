@@ -4,13 +4,13 @@ _Read this first when resuming. Trust it over assumptions; if it conflicts with 
 investigate before proceeding._
 
 ## Current status
-Step 7 (`/brief/[runId]`) complete and **verified** — clinical one-pager from Person A's real
-`*-output.json`: letterhead, overall badge, 4-layer breakdown (gate ×value), ACMG/AMP `<table>`,
-**verbatim per-row caveats** (ldlr †), `whatWouldChangeThis` (kcnq1) + `suggestedFollowUp`, print
-stylesheet (chrome hidden, doc flattened) + copy-link/print buttons.
-**Next: Step 8 — `/watch` dashboard.**
+Step 8 (`/watch`) complete and **verified** — Watcher dashboard: table of registered variants
+(gene/variant, clinical context, re-check cadence per row, last-checked, result) with BOTH states
+(checked—no change / update found→brief). Placeholder data; Person A's cron Watcher fills at merge.
 
-NOTE: user added a real `XAI_API_KEY` to `.env.local` (gitignored) → voice (Step 10) can run live.
+**Next: Step 10 — Grok VOICE first** (unblocked: user added a real `XAI_API_KEY` to gitignored
+`.env.local` → testable). **Then Step 9 — live wiring** (NOT solo-verifiable: needs Person A's
+backend routes merged + the v3/v4 decision + a joint test; I'll implement it ready-to-flip).
 
 Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typecheck` + `pnpm lint` clean.
 
@@ -39,12 +39,18 @@ Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typechec
 - [x] **Step 7** — `/brief/[runId]` (server, await params+?demo) + `components/BriefDocument.tsx`
       (clinical one-pager, print-optimized) + `BriefActions.tsx` (print / copy-link). Renders
       `DEMO_OUTPUTS[demo]` RunOutput. Verified ldlr (caveat + follow-up) & kcnq1 (whatWouldChangeThis + Low).
+- [x] **Step 8** — `/watch` dashboard (`app/watch/page.tsx`): shadcn Table of watched variants
+      (gene/variant, clinical context, re-check cadence, last-checked, result) — both states +
+      "update found → brief". Session "Watching…" note links here. Placeholder data.
 
 ## Next (immediate)
-Step 8 — `app/watch/page.tsx`: Watcher dashboard. List of registered variants (variant id,
-last-checked timestamp, result: "checked — no change" / "update found — view updated brief"). Surface
-the re-check interval per row (the cron cadence is part of the credibility story). Placeholder data;
-both result states represented.
+Step 10 (Grok voice) — FIRST, since it's unblocked + testable (XAI_API_KEY provided). CHECK current
+`@ai-sdk/xai` + AI SDK v6 speech/transcription docs. Speak each `narration` as it arrives (transcript
+stays in the conversation pane, in sync); optional voice input → conversation message; strict text
+fallback if key missing or API errors. Live in `/lib/voice/**`.
+Then Step 9 (live wiring) — implement `subscribeToRun` consuming Person A's `GET /api/realtime-token`
++ `subscribe` (inngest/realtime v4); wire `/brief` to `GET /api/brief/:runId`; keep fixture default +
+`?live` opt-in. NOT solo-verifiable (needs Person A backend merged + v3/v4 decision + joint test).
 
 ## Known issues / TODOs
 - **Tailwind v4 + Turbopack stale cache:** after adding new `@theme` tokens + their utilities,
@@ -73,4 +79,4 @@ both result states represented.
       `panel-to-hpo.json` labels). Send the `value` key as `clinicalContext`.
 
 ## Last commit
-Step 6 `e44d450`. Step 7 committing now. Branch `yesh`. Run `git log --oneline -10`.
+Step 7 `59c334d`. Step 8 committing now. Branch `yesh`. Run `git log --oneline -12`.

@@ -278,10 +278,13 @@ export function SessionView({ runId, demo }: { runId: string; demo: DemoId }) {
                     View your Doctor Brief <ArrowRight className="size-4" />
                   </Link>
                 </Button>
-                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Link
+                  href="/watch"
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
+                >
                   <Eye className="size-3.5" />
                   Watching this variant for reclassification.
-                </p>
+                </Link>
               </div>
             )}
             <div ref={conversationEndRef} />
