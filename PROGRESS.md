@@ -4,11 +4,13 @@ _Read this first when resuming. Trust it over assumptions; if it conflicts with 
 investigate before proceeding._
 
 ## Current status
-Step 6 (`/session/[runId]`) complete and **verified** — two-pane (Conversation + Evidence
-Trajectory) with the pipeline-strip header, driven by `useEvidenceRun` (fixture, `?demo=`).
-cacna1c verified: gate ×0.10, Cross-Species dampened (op 0.42) + label "low" (0.69→0.07), overall
-**High from human evidence** (faithful to Person A's gated model), brief CTA + watch confirmation.
-**Next: Step 7 — `/brief/[runId]` (printable Doctor Brief).**
+Step 7 (`/brief/[runId]`) complete and **verified** — clinical one-pager from Person A's real
+`*-output.json`: letterhead, overall badge, 4-layer breakdown (gate ×value), ACMG/AMP `<table>`,
+**verbatim per-row caveats** (ldlr †), `whatWouldChangeThis` (kcnq1) + `suggestedFollowUp`, print
+stylesheet (chrome hidden, doc flattened) + copy-link/print buttons.
+**Next: Step 8 — `/watch` dashboard.**
+
+NOTE: user added a real `XAI_API_KEY` to `.env.local` (gitignored) → voice (Step 10) can run live.
 
 Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typecheck` + `pnpm lint` clean.
 
@@ -34,14 +36,15 @@ Dev server: `pnpm dev` (`INNGEST_DEV=1`) @ http://localhost:3000. `pnpm typechec
       ConfidencePipelineStrip header, Conversation (narration bubbles + thinking dots + completion
       block w/ brief CTA + watch note), Evidence Trajectory (fragment cards w/ source icons + relevance
       chips, Mechanism-Gate marker before cross-species, queued placeholders). Enriched `DEMOS`/`DEMO_BY_ID`.
+- [x] **Step 7** — `/brief/[runId]` (server, await params+?demo) + `components/BriefDocument.tsx`
+      (clinical one-pager, print-optimized) + `BriefActions.tsx` (print / copy-link). Renders
+      `DEMO_OUTPUTS[demo]` RunOutput. Verified ldlr (caveat + follow-up) & kcnq1 (whatWouldChangeThis + Low).
 
 ## Next (immediate)
-Step 7 — `app/brief/[runId]/page.tsx` (await params + `?demo`): render a `DoctorBrief` (from
-`DEMO_OUTPUTS[demo]` for now — real `*-output.json`). Plain `summary`, `overall` (ConfidenceLabel) +
-`perLayerReasons` (+ gate value from `evidenceCard.pipeline.mechanismGate`), ACMG/AMP `<table>` (code,
-direction, strength, fact), per-row `caveat` **verbatim**, `whatWouldChangeThis`/`suggestedFollowUp`.
-Print stylesheet (clean one-page PDF) + share/download. NOTE: brief shape = `overall` string,
-`summary`, `perLayerReasons`, `AcmgRow.caveat?` (not the old `plainSummary`/`layers`/`ps3Caveat`).
+Step 8 — `app/watch/page.tsx`: Watcher dashboard. List of registered variants (variant id,
+last-checked timestamp, result: "checked — no change" / "update found — view updated brief"). Surface
+the re-check interval per row (the cron cadence is part of the credibility story). Placeholder data;
+both result states represented.
 
 ## Known issues / TODOs
 - **Tailwind v4 + Turbopack stale cache:** after adding new `@theme` tokens + their utilities,
@@ -70,4 +73,4 @@ Print stylesheet (clean one-page PDF) + share/download. NOTE: brief shape = `ove
       `panel-to-hpo.json` labels). Send the `value` key as `clinicalContext`.
 
 ## Last commit
-Step 5 `c8de2c3`. Step 6 committing now. Branch `yesh`. Run `git log --oneline -10`.
+Step 6 `e44d450`. Step 7 committing now. Branch `yesh`. Run `git log --oneline -10`.
