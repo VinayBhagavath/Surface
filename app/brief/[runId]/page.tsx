@@ -12,32 +12,25 @@ export const dynamic = "force-dynamic";
 
 export default async function BriefPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ runId: string }>;
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const { runId } = await params;
-  const sp = await searchParams;
-  const variant = typeof sp.variant === "string" ? sp.variant : undefined;
-  const clinicalContext = typeof sp.context === "string" ? sp.context : undefined;
-  const gene = typeof sp.gene === "string" ? sp.gene : undefined;
 
   const output: RunOutput | null = await getOutput(runId);
-  const backParams = new URLSearchParams({ live: "1" });
-  if (variant) backParams.set("variant", variant);
-  if (clinicalContext) backParams.set("context", clinicalContext);
-  if (gene) backParams.set("gene", gene);
 
   return (
     <main className="surface-grid min-h-screen px-4 py-6 print:bg-white print:p-0">
       <div className="mx-auto max-w-3xl">
         <div className="mb-4 flex items-center justify-between print:hidden">
+          {/* The session is a one-shot LIVE stream — it can't be re-entered after
+              it finishes (the Realtime run is over), so back always returns to
+              the upload page to start a fresh analysis rather than a stuck stream. */}
           <Link
-            href={`/session/${runId}?${backParams.toString()}`}
+            href="/"
             className="inline-flex items-center gap-2 text-sm text-muted-foreground transition-colors hover:text-foreground"
           >
-            <ArrowLeft className="size-4" /> Back to session
+            <ArrowLeft className="size-4" /> Start a new analysis
           </Link>
           {output && <BriefActions />}
         </div>
@@ -52,8 +45,9 @@ export default async function BriefPage({
               Doctor Brief is not ready yet
             </h1>
             <p className="mx-auto mt-3 max-w-md text-sm leading-relaxed text-muted-foreground">
-              The evidence pipeline has not written a completed output for this run. Return
-              to the session stream and open the brief after the completion event appears.
+              The evidence pipeline has not written a completed output for this run. The
+              brief becomes available once the live run finishes — start a new analysis
+              from the upload page if this run didn&rsquo;t complete.
             </p>
           </section>
         )}
