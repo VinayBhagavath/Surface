@@ -69,6 +69,7 @@ function reducer(state: EvidenceRunState, action: Action): EvidenceRunState {
 }
 
 export type UseEvidenceRunOptions = {
+  /** Defaults to `"live"`. Pass `"fixture"` only for dev replay of captured events. */
   source?: "fixture" | "live";
   /** Required in fixture mode. Pass a STABLE reference (e.g. DEMO_RUNS[id]). */
   fixture?: RealtimeEvent[];
@@ -102,7 +103,7 @@ export function useEvidenceRun(
   runId: string,
   opts?: UseEvidenceRunOptions,
 ): EvidenceRunState {
-  const source = opts?.source ?? "fixture";
+  const source = opts?.source ?? "live";
   const fixture = opts?.fixture;
   const intervalMs = opts?.intervalMs ?? 700;
 

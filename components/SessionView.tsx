@@ -105,10 +105,12 @@ export function SessionView({
 
   // Intro "decode" animation: starts immediately when the session opens (so we
   // never flash the half-built result first), and hands off once the real change
-  // is in. If the run completes with nothing drawable, we skip straight through.
+  // is in. Bail out early if the run finishes with nothing drawable, or if VEP
+  // arrived but this variant can't be drawn (don't block the UI on a stuck scan).
   const [introDone, setIntroDone] = React.useState(false);
   const onIntroDone = React.useCallback(() => setIntroDone(true), []);
-  const showIntro = !introDone && !(complete && !seqCtx);
+  const vepUnDrawable = Boolean(liveVep) && !seqCtx;
+  const showIntro = !introDone && !(complete && !seqCtx) && !vepUnDrawable;
 
   // ── agent thinking voice (Grok TTS, optional, fails silent) ────────────────
   const {

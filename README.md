@@ -135,6 +135,22 @@ store.
 
 ---
 
+## Example VCF files (verified live VUS)
+
+Upload-ready single-variant fixtures in `public/samples/`. Each is a real rsID
+checked live against ClinVar (uncertain significance, not early-exit) and Ensembl
+VEP. Pick the matching **"What is this testing for?"** option on intake.
+
+| File | Variant | Testing for | What you'll see |
+| --- | --- | --- | --- |
+| `ldlr_hypercholesterolemia_VUS.vcf` | LDLR p.Phe32Ser (`rs879254403`) | High cholesterol / lipid disorder | Gate **opens** (LoF gene); strong predictors → **high** confidence |
+| `cacna1c_longqt_VUS.vcf` | CACNA1C p.Arg518Trp (`rs776805699`) | Arrhythmia / long-QT | Mechanism gate **closes** (GoF); dramatic mouse signal suppressed |
+| `kcnq1_longqt_VUS.vcf` | KCNQ1 p.Ala194Val (`rs2133727494`) | Long-QT syndrome | Predictors **disagree** → honest **moderate/low** |
+| `atm_cancer_VUS.vcf` | ATM p.Pro1054His (`rs1800057`) | Cancer predisposition | LoF cancer gene; gate open → **moderate** |
+| `patient_PT001_raw.vcf` | 12-variant panel | Cancer predisposition | Mixed: real VUS (TP53, ATM, CHEK2, APC) + correctly early-exiting classified variants (BRCA1, BRCA2, MLH1, PTEN) |
+
+---
+
 ## Scripts
 
 | command | purpose |
