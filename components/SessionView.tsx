@@ -1,11 +1,13 @@
 "use client";
 
 // The investigation — fully LIVE, one calm vertical flow:
-//   0. an intro "decode" animation over the real sequence (between upload & result)
+//   0. an intro "decode" animation that plays the moment the session opens and
+//      hands off only once the real change is in (between upload & result)
 //   1. the DNA change we found (SequenceViewer, from the live VEP fragment)
-//   2. a short, high-level animated trace of what the agent is doing (live events)
+//   2. what the agent is THINKING — its live, Grok-written narration, shown as a
+//      thought trail and (optionally) spoken aloud in the Grok voice, plus a
+//      high-level checklist of the steps it is running
 //   3. a plain-language summary written by Grok from the run's real output
-//   4. an optional follow-up Q&A (Grok, grounded in this run; voice optional)
 //
 // Everything is driven by the live Inngest Realtime stream for `runId` and the
 // run's real stored output. No fixtures, no demo replay, no deterministic
@@ -16,13 +18,12 @@ import Link from "next/link";
 import {
   ArrowLeft,
   ArrowRight,
+  AudioLines,
   BookOpen,
   Check,
   Eye,
   Loader2,
-  Mic,
   RotateCw,
-  Send,
   Volume2,
   VolumeX,
 } from "lucide-react";
@@ -31,8 +32,7 @@ import { useEvidenceRun } from "@/lib/useEvidenceRun";
 import { parseSequenceContext } from "@/lib/sequence";
 import { type PatientSummary } from "@/lib/patient-summary";
 import { summarizeForPatient } from "@/app/actions/patient-summary";
-import { askFollowup, type FollowupContext } from "@/app/actions/ask-followup";
-import { useSpeech } from "@/lib/voice/useSpeech";
+import { useAgentVoice } from "@/lib/voice/useAgentVoice";
 import { TRACE_STAGES, stageStatuses, type StageStatus } from "@/lib/agent-trace";
 import { SequenceViewer } from "@/components/SequenceViewer";
 import { SequenceDecodeAnimation } from "@/components/SequenceDecodeAnimation";
@@ -89,7 +89,7 @@ export function SessionView({
   clinicalContext?: string;
   gene?: string;
 }) {
-  const { fragments, pipeline, complete } = useEvidenceRun(runId, { source: "live" });
+  const { fragments, pipeline, narrations, complete } = useEvidenceRun(runId, { source: "live" });
 
   const statuses = stageStatuses({ fragments, pipeline, complete });
 
@@ -103,10 +103,53 @@ export function SessionView({
   const displayGene = seqCtx?.gene ?? gene ?? "";
   const displayVariant = variant ?? "";
 
-  // Intro "decode" animation: plays once, as soon as we can draw the real change.
+  // Intro "decode" animation: starts immediately when the session opens (so we
+  // never flash the half-built result first), and hands off once the real change
+  // is in. If the run completes with nothing drawable, we skip straight through.
   const [introDone, setIntroDone] = React.useState(false);
   const onIntroDone = React.useCallback(() => setIntroDone(true), []);
-  const showIntro = Boolean(seqCtx) && !introDone && !complete;
+  const showIntro = !introDone && !(complete && !seqCtx);
+
+  // ── agent thinking voice (Grok TTS, optional, fails silent) ────────────────
+  const {
+    enabled: voiceEnabled,
+    speaking: voiceSpeaking,
+    speakingText: voiceSpeakingText,
+    toggle: voiceToggle,
+    enqueue: voiceEnqueue,
+    playNow: voicePlayNow,
+  } = useAgentVoice();
+
+  const spokenIdx = React.useRef(0);
+  React.useEffect(() => {
+    if (!voiceEnabled) {
+      // Don't backlog while muted — start speaking from "now" when switched on.
+      spokenIdx.current = narrations.length;
+      return;
+    }
+    if (narrations.length > spokenIdx.current) {
+      voiceEnqueue(narrations.slice(spokenIdx.current));
+      spokenIdx.current = narrations.length;
+    }
+  }, [narrations, voiceEnabled, voiceEnqueue]);
+
+  const onToggleVoice = React.useCallback(() => {
+    if (voiceEnabled) {
+      voiceToggle();
+      return;
+    }
+    voiceToggle();
+    // Speak the latest thought right away, tied to this click (unlocks autoplay).
+    const latest = narrations[narrations.length - 1];
+    if (latest) voicePlayNow(latest);
+  }, [voiceEnabled, voiceToggle, voicePlayNow, narrations]);
+
+  // Keep the thought trail scrolled to the newest line.
+  const trailRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    const el = trailRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [narrations]);
 
   // Patient summary: written LIVE by Grok on completion. No fake fallback —
   // failure surfaces an honest retry.
@@ -140,65 +183,9 @@ export function SessionView({
     return `/brief/${runId}?${p.toString()}`;
   })();
 
-  // ── follow-up Q&A (optional, grounded in this run) ─────────────────────────
-  const { ttsSupported, sttSupported, listening, speak, cancelSpeech, listen, stopListening } = useSpeech();
-  const [voiceOn, setVoiceOn] = React.useState(false);
-  const [draft, setDraft] = React.useState("");
-  const [asking, setAsking] = React.useState(false);
-  const [turns, setTurns] = React.useState<{ role: "user" | "assistant"; text: string }[]>([]);
-
-  const buildContext = React.useCallback((): FollowupContext => {
-    const lbl = (l: { label: string } | null) => (l ? l.label : "pending");
-    const g = pipeline.mechanismGate;
-    return {
-      geneSymbol: displayGene || "this gene",
-      variant: displayVariant,
-      clinicalContext: clinicalContext ?? "",
-      overall: pipeline.overall?.label ?? summary?.confidence ?? null,
-      pipelineSummary: `gene-prior ${lbl(pipeline.genePrior)}, variant-effect ${lbl(
-        pipeline.variantEffect,
-      )}, mechanism-gate ×${g ? g.value.toFixed(2) : "?"}, cross-species ${lbl(pipeline.crossSpecies)}`,
-      evidence: fragments.map((f) => f.summary),
-    };
-  }, [pipeline, displayGene, displayVariant, clinicalContext, summary, fragments]);
-
-  const ask = React.useCallback(
-    (question: string) => {
-      const q = question.trim();
-      if (!q || asking) return;
-      setDraft("");
-      setTurns((t) => [...t, { role: "user", text: q }]);
-      setAsking(true);
-      askFollowup(q, buildContext())
-        .then((res) => {
-          const text = res.ok ? res.answer : res.reason;
-          setTurns((t) => [...t, { role: "assistant", text }]);
-          if (res.ok && voiceOn) speak(res.answer);
-        })
-        .catch(() => setTurns((t) => [...t, { role: "assistant", text: "The follow-up request failed." }]))
-        .finally(() => setAsking(false));
-    },
-    [asking, buildContext, voiceOn, speak],
-  );
-
-  function onMic() {
-    if (listening) {
-      stopListening();
-      return;
-    }
-    listen((text) => ask(text));
-  }
-
-  function toggleVoice() {
-    setVoiceOn((on) => {
-      if (on) cancelSpeech();
-      return !on;
-    });
-  }
-
   return (
     <main className="min-h-screen bg-background">
-      {showIntro && seqCtx && <SequenceDecodeAnimation ctx={seqCtx} onDone={onIntroDone} />}
+      {showIntro && <SequenceDecodeAnimation ctx={seqCtx} onDone={onIntroDone} />}
 
       <header className="sticky top-0 z-10 flex items-center gap-3 border-b bg-card/80 px-4 py-2.5 backdrop-blur sm:px-6">
         <Link
@@ -244,14 +231,88 @@ export function SessionView({
           )}
         </section>
 
-        {/* 2 — what the agent is doing (high level, live) */}
+        {/* 2 — what the agent is thinking (live narration, spoken in the Grok voice) */}
         <section className="space-y-3">
-          <h2 className="font-serif text-xl font-semibold text-foreground">What the agent is doing</h2>
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-serif text-xl font-semibold text-foreground">What the agent is thinking</h2>
+            <button
+              type="button"
+              onClick={onToggleVoice}
+              aria-pressed={voiceEnabled}
+              className={cn(
+                "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors",
+                voiceEnabled
+                  ? "border-primary/40 bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
+              )}
+              title="Hear the agent explain its thinking in the Grok voice"
+            >
+              {voiceEnabled ? (
+                <AudioLines className={cn("size-3.5", voiceSpeaking && "animate-pulse")} />
+              ) : (
+                <VolumeX className="size-3.5" />
+              )}
+              {voiceEnabled ? (voiceSpeaking ? "Speaking…" : "Voice on") : "Hear it think"}
+            </button>
+          </div>
+
+          {/* live thought trail — the agent's own plain-language commentary */}
+          {narrations.length > 0 ? (
+            <div
+              ref={trailRef}
+              className="max-h-52 space-y-2.5 overflow-y-auto rounded-xl border bg-card p-4"
+              aria-live="polite"
+            >
+              {narrations.map((line, i) => {
+                const isLatest = i === narrations.length - 1;
+                const isSpeaking = voiceSpeaking && voiceSpeakingText === line;
+                return (
+                  <div key={i} className="group flex items-start gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => voicePlayNow(line)}
+                      aria-label="Play this thought aloud"
+                      className={cn(
+                        "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full border transition-all",
+                        isSpeaking
+                          ? "border-primary/40 bg-primary/10 text-primary"
+                          : "border-transparent text-muted-foreground/50 hover:border-border hover:text-foreground group-hover:text-muted-foreground",
+                      )}
+                    >
+                      {isSpeaking ? (
+                        <AudioLines className="size-3.5 animate-pulse" />
+                      ) : (
+                        <Volume2 className="size-3.5" />
+                      )}
+                    </button>
+                    <p
+                      className={cn(
+                        "text-pretty text-sm leading-relaxed transition-colors",
+                        isLatest ? "text-foreground" : "text-foreground/55",
+                      )}
+                    >
+                      {line}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex items-center gap-3 rounded-xl border border-dashed bg-card/50 p-4 text-sm text-muted-foreground">
+              <Loader2 className="size-4 animate-spin" /> Connecting to the live agent…
+            </div>
+          )}
+
+          {/* high-level checklist of the steps it is running */}
           <ul className="rounded-xl border bg-card px-4 py-2 sm:px-5">
             {TRACE_STAGES.map((stage, i) => (
               <StageRow key={stage.id} stage={stage} status={statuses[i]} />
             ))}
           </ul>
+
+          <p className="px-1 text-[0.7rem] text-muted-foreground">
+            The agent narrates each step in plain language; turn on the voice to hear it think aloud.
+          </p>
         </section>
 
         {/* 3 — plain-language summary (written live by Grok) */}
@@ -377,86 +438,6 @@ export function SessionView({
             </div>
           )}
         </section>
-
-        {/* 4 — follow-up Q&A (optional; grounded in this run) */}
-        {complete && (
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="font-serif text-xl font-semibold text-foreground">Ask a question</h2>
-              {ttsSupported && (
-                <button
-                  type="button"
-                  onClick={toggleVoice}
-                  className="inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground"
-                  aria-pressed={voiceOn}
-                >
-                  {voiceOn ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5" />}
-                  {voiceOn ? "Read answers aloud" : "Voice off"}
-                </button>
-              )}
-            </div>
-
-            {turns.length > 0 && (
-              <div className="space-y-2">
-                {turns.map((t, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      "rounded-xl border px-4 py-2.5 text-sm leading-relaxed",
-                      t.role === "user" ? "bg-muted/40 text-foreground" : "bg-card text-foreground/90",
-                    )}
-                  >
-                    {t.text}
-                  </div>
-                ))}
-                {asking && (
-                  <div className="flex items-center gap-2 px-1 text-xs text-muted-foreground">
-                    <Loader2 className="size-3.5 animate-spin" /> Thinking…
-                  </div>
-                )}
-              </div>
-            )}
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                ask(draft);
-              }}
-              className="flex items-center gap-2"
-            >
-              <input
-                value={draft}
-                onChange={(e) => setDraft(e.target.value)}
-                placeholder="e.g. Does this mean I'll definitely get sick?"
-                className="flex-1 rounded-lg border bg-card px-3 py-2 text-sm outline-none ring-primary/30 focus:ring-2"
-              />
-              {sttSupported && (
-                <button
-                  type="button"
-                  onClick={onMic}
-                  className={cn(
-                    "flex size-9 shrink-0 items-center justify-center rounded-lg border transition-colors",
-                    listening ? "border-primary bg-primary/10 text-primary" : "text-muted-foreground hover:bg-accent",
-                  )}
-                  aria-label={listening ? "Stop listening" : "Ask by voice"}
-                >
-                  <Mic className="size-4" />
-                </button>
-              )}
-              <button
-                type="submit"
-                disabled={asking || !draft.trim()}
-                className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition-colors hover:opacity-90 disabled:opacity-50"
-                aria-label="Send question"
-              >
-                <Send className="size-4" />
-              </button>
-            </form>
-            <p className="px-1 text-[0.7rem] text-muted-foreground">
-              Answers are grounded only in this run&rsquo;s evidence. Your doctor or genetic counselor decides.
-            </p>
-          </section>
-        )}
       </div>
     </main>
   );

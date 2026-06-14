@@ -34,6 +34,25 @@ export function getXaiConfig(): XaiConfig {
   };
 }
 
+export type XaiVoiceConfig = { apiKey: string; baseUrl: string; model: string; voiceId: string; speed: number };
+
+/** Configuration for the agent-thinking VOICE (xAI Text-to-Speech, `POST /v1/tts`).
+ *  Shares the same key/base URL as the reasoning client. The TTS endpoint speaks
+ *  the live, Grok-written narration aloud so a patient can hear what the agent is
+ *  doing. `model` defaults to grok-voice-think-fast-1.1 (the request is accepted
+ *  with or without it). Voice + speed are tunable via env. Throws if no key. */
+export function getXaiVoiceConfig(): XaiVoiceConfig {
+  const base = getXaiConfig(); // reuses key + base URL validation
+  const speed = Number(process.env.XAI_TTS_SPEED);
+  return {
+    apiKey: base.apiKey,
+    baseUrl: base.baseUrl,
+    model: process.env.XAI_TTS_MODEL || "grok-voice-think-fast-1.1",
+    voiceId: process.env.XAI_TTS_VOICE || "eve",
+    speed: Number.isFinite(speed) && speed >= 0.7 && speed <= 1.5 ? speed : 0.95,
+  };
+}
+
 /** Vercel KV / Upstash REST credentials, if configured. When absent, the store
  *  falls back to an in-process Map (fine for `inngest-cli dev`, not for
  *  multi-instance serverless — see lib/store.ts). */

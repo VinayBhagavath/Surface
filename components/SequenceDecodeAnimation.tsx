@@ -2,15 +2,21 @@
 
 // Intro "decode" animation shown between the file upload and the result page.
 //
-// It previews the uploaded sequence as a strip of codon groups, then sweeps a
-// scanner left → right, marking each group OK (green) or "possible VUS" (orange)
-// as it passes. Once the scan reaches the uncertain change, every healthy group
-// floats away and the single VUS group zooms up to center stage — handing off to
-// the real result view ("The change we found in your DNA").
+// It plays IMMEDIATELY when the session opens — before the live result is drawn —
+// so the experience is one clean, uninterrupted sequence: investigate → decode →
+// result (never a flash of the half-built result page first). It previews the
+// uploaded sequence as a strip of codon groups, sweeps a scanner left → right
+// marking each group OK (green) or "possible VUS" (orange), then every healthy
+// group floats away and the single VUS group zooms to centre stage — handing off
+// to the real result view ("The change we found in your DNA").
 //
-// The uncertain (orange) group is the REAL substitution from the run's sequence
-// context; the surrounding groups are a deterministic scanning visualisation
-// (clearly a transition, never presented as the patient's flanking genome).
+// The uncertain (orange) group is the REAL substitution from the run's live VEP
+// fragment. Because that fragment streams in a beat after the page opens, the
+// scan starts right away with the surrounding (clearly decorative) groups and
+// only proceeds to the isolate/zoom hand-off once the real change has arrived —
+// so the result we zoom into is always the patient's actual variant, never a
+// placeholder. The surrounding bases are a transition visualisation and are
+// never presented as the patient's flanking genome.
 
 import * as React from "react";
 import { Check, AlertTriangle, Dna } from "lucide-react";
@@ -19,18 +25,25 @@ import type { SequenceContext } from "@/lib/sequence";
 import { cn } from "@/lib/utils";
 
 const NUCLEOTIDES = ["A", "C", "G", "T"] as const;
-const TOTAL_GROUPS = 9;
-const VUS_AT = 4; // center the uncertain change in the strip
-const REVEAL_MS = 300; // cadence of the left→right scan
+const TOTAL_GROUPS = 7;
+const VUS_AT = 3; // center the uncertain change in the strip
+
+// Timeline (ms) — deliberately unhurried so each step is legible.
+const START_DELAY = 650; // beat before the scan begins
+const REVEAL_MS = 520; // cadence of the left→right scan
+const HOLD_MS = 950; // pause on "Sequence decoded" before isolating
+const ISOLATE_MS = 1250; // time on "One change stands out"
+const ZOOM_MS = 2300; // time on the zoomed hero before hand-off
 
 type Group = {
   id: number;
   bases: string[];
   isVus: boolean;
   changedIndex: number;
+  ready: boolean; // false → still a placeholder (real change not in yet)
 };
 
-/** Tiny deterministic PRNG so the decorative bases are stable per variant. */
+/** Tiny deterministic PRNG so the decorative bases are stable across renders. */
 function makeRng(seed: number) {
   let s = seed % 4294967296;
   if (s <= 0) s = 7;
@@ -40,35 +53,34 @@ function makeRng(seed: number) {
   };
 }
 
-function buildGroups(ctx: SequenceContext): Group[] {
-  const seed =
-    (ctx.gene ?? "").split("").reduce((a, c) => a + c.charCodeAt(0), 0) +
-    (ctx.cdnaPos ?? ctx.pos ?? 17);
-  const rand = makeRng(seed);
-
+/** The decorative (non-VUS) groups. Fixed seed so they never reshuffle when the
+ *  real change streams in mid-scan — they are explicitly a transition visual. */
+function buildDecorGroups(): Group[] {
+  const rand = makeRng(20260613);
   const groups: Group[] = [];
   for (let i = 0; i < TOTAL_GROUPS; i++) {
-    if (i === VUS_AT) {
-      const codon =
-        ctx.altCodon?.map((b) => b.letter).slice(0, 3) ??
-        [ctx.refBase ?? "A", ctx.altBase ?? "C", "G"];
-      const changedIndex = ctx.altCodon?.findIndex((b) => b.changed) ?? 0;
-      groups.push({
-        id: i,
-        bases: codon.length === 3 ? codon : [...codon, "G"].slice(0, 3),
-        isVus: true,
-        changedIndex: changedIndex < 0 ? 0 : changedIndex,
-      });
-    } else {
-      groups.push({
-        id: i,
-        bases: [0, 1, 2].map(() => NUCLEOTIDES[Math.floor(rand() * 4)]),
-        isVus: false,
-        changedIndex: -1,
-      });
-    }
+    groups.push({
+      id: i,
+      bases: [0, 1, 2].map(() => NUCLEOTIDES[Math.floor(rand() * 4)]),
+      isVus: false,
+      changedIndex: -1,
+      ready: true,
+    });
   }
   return groups;
+}
+
+/** The single VUS group — the real substitution, or a "?" placeholder until the
+ *  live VEP fragment arrives. */
+function buildVusGroup(ctx: SequenceContext | null): Group {
+  if (!ctx) {
+    return { id: VUS_AT, bases: ["?", "?", "?"], isVus: true, changedIndex: 1, ready: false };
+  }
+  const codon =
+    ctx.altCodon?.map((b) => b.letter).slice(0, 3) ?? [ctx.refBase ?? "A", ctx.altBase ?? "C", "G"];
+  const changedIndex = ctx.altCodon?.findIndex((b) => b.changed) ?? 0;
+  const bases = codon.length === 3 ? codon : [...codon, "G"].slice(0, 3);
+  return { id: VUS_AT, bases, isVus: true, changedIndex: changedIndex < 0 ? 0 : changedIndex, ready: true };
 }
 
 type Phase = "scan" | "isolate" | "zoom";
@@ -80,21 +92,20 @@ function BaseTile({
   small,
 }: {
   letter: string;
-  state: "idle" | "ok" | "vus";
+  state: "idle" | "ok" | "vus" | "decoding";
   changed?: boolean;
   small?: boolean;
 }) {
   return (
     <span
       className={cn(
-        "flex items-center justify-center rounded-md border font-mono font-semibold tabular-nums transition-all duration-500 ease-out",
+        "flex items-center justify-center rounded-md border font-mono font-semibold tabular-nums transition-all duration-700 ease-out",
         small ? "size-7 text-sm sm:size-8 sm:text-base" : "size-12 text-xl sm:size-14 sm:text-2xl",
         state === "idle" && "border-border bg-muted/50 text-muted-foreground/70",
-        state === "ok" &&
-          "border-confidence-high/40 bg-confidence-high-soft text-confidence-high-ink",
-        state === "vus" &&
-          !changed &&
-          "border-confidence-low/50 bg-confidence-low-soft/70 text-confidence-low-ink",
+        state === "decoding" &&
+          "animate-soft-pulse border-confidence-low/40 bg-confidence-low-soft/40 text-confidence-low-ink/70",
+        state === "ok" && "border-confidence-high/40 bg-confidence-high-soft text-confidence-high-ink",
+        state === "vus" && !changed && "border-confidence-low/50 bg-confidence-low-soft/70 text-confidence-low-ink",
         state === "vus" &&
           changed &&
           "border-confidence-low/80 bg-confidence-low-soft text-confidence-low-ink ring-2 ring-inset ring-confidence-low/60 shadow-sm",
@@ -109,40 +120,57 @@ export function SequenceDecodeAnimation({
   ctx,
   onDone,
 }: {
-  ctx: SequenceContext;
+  ctx: SequenceContext | null;
   onDone: () => void;
 }) {
-  const groups = React.useMemo(() => buildGroups(ctx), [ctx]);
+  const ctxReady = Boolean(ctx);
+  const vusGroup = React.useMemo(() => buildVusGroup(ctx), [ctx]);
+  const groups = React.useMemo(() => {
+    const arr = buildDecorGroups();
+    arr[VUS_AT] = vusGroup;
+    return arr;
+  }, [vusGroup]);
+
   const [revealed, setRevealed] = React.useState(0);
+  const [scanDone, setScanDone] = React.useState(false);
   const [phase, setPhase] = React.useState<Phase>("scan");
 
   const stripRef = React.useRef<HTMLDivElement>(null);
   const groupRefs = React.useRef<(HTMLDivElement | null)[]>([]);
+  const scheduledRef = React.useRef(false);
 
-  // Orchestrate the timeline: reveal groups left→right, then isolate, then zoom.
+  // ── scan: reveal groups left → right (independent of when the change arrives)
   React.useEffect(() => {
-    const timers: ReturnType<typeof setTimeout>[] = [];
     let i = 0;
-
+    let iv: ReturnType<typeof setInterval> | null = null;
     const start = setTimeout(() => {
-      const iv = setInterval(() => {
+      iv = setInterval(() => {
         i += 1;
         setRevealed(i);
-        if (i >= groups.length) {
-          clearInterval(iv);
-          timers.push(setTimeout(() => setPhase("isolate"), 650));
-          timers.push(setTimeout(() => setPhase("zoom"), 1550));
-          timers.push(setTimeout(() => onDone(), 3250));
+        if (i >= TOTAL_GROUPS) {
+          if (iv) clearInterval(iv);
+          setScanDone(true);
         }
       }, REVEAL_MS);
-      timers.push(iv as unknown as ReturnType<typeof setTimeout>);
-    }, 500);
-
+    }, START_DELAY);
     return () => {
       clearTimeout(start);
-      timers.forEach((t) => clearTimeout(t));
+      if (iv) clearInterval(iv);
     };
-  }, [groups.length, onDone]);
+  }, []);
+
+  // ── isolate → zoom → hand-off: only once the scan is done AND the real change
+  //    is in. If the change is slow, we simply hold on the decoded strip.
+  React.useEffect(() => {
+    if (!scanDone || !ctxReady || scheduledRef.current) return;
+    scheduledRef.current = true;
+    const timers = [
+      setTimeout(() => setPhase("isolate"), HOLD_MS),
+      setTimeout(() => setPhase("zoom"), HOLD_MS + ISOLATE_MS),
+      setTimeout(() => onDone(), HOLD_MS + ISOLATE_MS + ZOOM_MS),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [scanDone, ctxReady, onDone]);
 
   // Keep the active (or the VUS) group centered as the strip advances.
   React.useEffect(() => {
@@ -154,12 +182,13 @@ export function SequenceDecodeAnimation({
     container.scrollTo({ left, behavior: "smooth" });
   }, [revealed, phase, groups.length]);
 
-  const vusGroup = groups[VUS_AT];
   const caption =
     phase === "scan"
-      ? revealed >= groups.length
-        ? "Sequence decoded"
-        : "Scanning your sequence for variants\u2026"
+      ? !scanDone
+        ? "Scanning your sequence for variants\u2026"
+        : ctxReady
+          ? "Sequence decoded"
+          : "Reading the change in your file\u2026"
       : phase === "isolate"
         ? "One change stands out"
         : "The change we found";
@@ -175,7 +204,7 @@ export function SequenceDecodeAnimation({
       >
         <span className="inline-flex items-center gap-2 font-mono text-[0.7rem] uppercase tracking-[0.22em] text-muted-foreground">
           <Dna className="size-3.5 animate-dna-bob" />
-          {ctx.gene}
+          {ctx?.gene ?? "Decoding"}
         </span>
         <h2
           key={caption}
@@ -189,25 +218,22 @@ export function SequenceDecodeAnimation({
       <div
         className={cn(
           "relative w-full max-w-3xl transition-opacity",
-          phase === "zoom"
-            ? "pointer-events-none opacity-0 duration-200"
-            : "opacity-100 duration-500",
+          phase === "zoom" ? "pointer-events-none opacity-0 duration-200" : "opacity-100 duration-500",
         )}
       >
         {/* soft scan beam */}
-        {phase === "scan" && revealed < groups.length && (
+        {phase === "scan" && !scanDone && (
           <div className="pointer-events-none absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-primary/50 to-transparent animate-soft-pulse" />
         )}
-        <div
-          ref={stripRef}
-          className="flex items-end gap-3 overflow-hidden px-[50%] py-6 sm:gap-4"
-        >
+        <div ref={stripRef} className="flex items-end gap-3 overflow-hidden px-[50%] py-6 sm:gap-4">
           {groups.map((g, gi) => {
             const isRevealed = revealed > gi;
-            const state: "idle" | "ok" | "vus" = !isRevealed
+            const state: "idle" | "ok" | "vus" | "decoding" = !isRevealed
               ? "idle"
               : g.isVus
-                ? "vus"
+                ? g.ready
+                  ? "vus"
+                  : "decoding"
                 : "ok";
             const fadedOut = phase !== "scan" && !g.isVus;
             return (
@@ -217,9 +243,9 @@ export function SequenceDecodeAnimation({
                   groupRefs.current[gi] = el;
                 }}
                 className={cn(
-                  "flex shrink-0 flex-col items-center gap-2 transition-all duration-700 ease-out",
+                  "flex shrink-0 flex-col items-center gap-2 transition-all duration-1000 ease-out",
                   fadedOut ? "translate-y-3 opacity-0" : "opacity-100",
-                  isRevealed && g.isVus && phase === "scan" && "animate-dna-bob",
+                  isRevealed && g.isVus && g.ready && phase === "scan" && "animate-dna-bob",
                 )}
               >
                 <div className={cn("flex items-center gap-1.5", isRevealed && "animate-dna-pop")}>
@@ -228,7 +254,7 @@ export function SequenceDecodeAnimation({
                       key={bi}
                       letter={b}
                       state={state}
-                      changed={g.isVus && bi === g.changedIndex}
+                      changed={g.isVus && g.ready && bi === g.changedIndex}
                       small
                     />
                   ))}
@@ -238,12 +264,8 @@ export function SequenceDecodeAnimation({
                   className={cn(
                     "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.6rem] font-medium transition-all duration-300",
                     !isRevealed && "border-transparent text-transparent",
-                    isRevealed &&
-                      !g.isVus &&
-                      "border-confidence-high/30 bg-confidence-high-soft text-confidence-high-ink",
-                    isRevealed &&
-                      g.isVus &&
-                      "border-confidence-low/40 bg-confidence-low-soft text-confidence-low-ink",
+                    isRevealed && !g.isVus && "border-confidence-high/30 bg-confidence-high-soft text-confidence-high-ink",
+                    isRevealed && g.isVus && "border-confidence-low/40 bg-confidence-low-soft text-confidence-low-ink",
                   )}
                 >
                   {isRevealed && !g.isVus && (
@@ -253,7 +275,7 @@ export function SequenceDecodeAnimation({
                   )}
                   {isRevealed && g.isVus && (
                     <>
-                      <AlertTriangle className="size-2.5" /> Possible VUS
+                      <AlertTriangle className="size-2.5" /> {g.ready ? "Possible VUS" : "Reading\u2026"}
                     </>
                   )}
                 </span>
@@ -271,15 +293,10 @@ export function SequenceDecodeAnimation({
           </span>
           <div className="flex items-center gap-2 sm:gap-3">
             {vusGroup.bases.map((b, bi) => (
-              <BaseTile
-                key={bi}
-                letter={b}
-                state="vus"
-                changed={bi === vusGroup.changedIndex}
-              />
+              <BaseTile key={bi} letter={b} state="vus" changed={bi === vusGroup.changedIndex} />
             ))}
           </div>
-          {ctx.refBase && ctx.altBase && (
+          {ctx?.refBase && ctx?.altBase && (
             <p className="font-mono text-sm text-muted-foreground">
               <span className="font-semibold text-confidence-pending-ink">{ctx.refBase}</span>
               {" \u2192 "}

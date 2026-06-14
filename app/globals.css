@@ -245,13 +245,13 @@
   animation: dna-bob 2.6s ease-in-out infinite;
 }
 .animate-dna-pop {
-  animation: dna-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: dna-pop 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .animate-vus-zoom-in {
-  animation: vus-zoom-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: vus-zoom-in 1.1s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .animate-soft-pulse {
-  animation: soft-pulse 1.8s ease-in-out infinite;
+  animation: soft-pulse 2s ease-in-out infinite;
 }
 
 @media (prefers-reduced-motion: reduce) {
